@@ -1,0 +1,25 @@
+@media print {
+  .sidebar,
+  .topbar,
+  .skip-link,
+  .nao-imprimir {
+    display: none !important;
+  }
+
+  body,
+  .app-shell,
+  .main-area,
+  .content-container {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .card {
+    border: 1px solid #000000 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}
