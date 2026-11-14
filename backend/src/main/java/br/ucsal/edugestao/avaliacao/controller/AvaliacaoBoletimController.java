@@ -82,7 +82,7 @@ public class AvaliacaoBoletimController {
 
     @PostMapping("/autorizacoes-alteracao")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('COORDENADOR', 'ADMINISTRADOR')")
+    @PreAuthorize("hasRole('COORDENADOR')")
     public AutorizacaoAlteracaoDto criarAutorizacao(@Valid @RequestBody AutorizacaoAlteracaoDto dto) {
         return autorizacaoAlteracaoService.criarAutorizacao(dto);
     }

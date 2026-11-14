@@ -1,6 +1,7 @@
 package br.ucsal.edugestao.ocorrencia.dto;
 
 import br.ucsal.edugestao.ocorrencia.entity.Ocorrencia;
+import br.ucsal.edugestao.ocorrencia.entity.StatusAtendimento;
 import br.ucsal.edugestao.ocorrencia.entity.TipoOcorrencia;
 import br.ucsal.edugestao.usuario.entity.Aluno;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record OcorrenciaDto(
@@ -21,7 +23,10 @@ public record OcorrenciaDto(
         String descricao,
         @NotEmpty(message = "Informe ao menos um estudante envolvido")
         List<Long> alunosIds,
-        List<String> alunosNomes
+        List<String> alunosNomes,
+        StatusAtendimento status,
+        String medidas,
+        LocalDateTime atualizadaEm
 ) {
     public static OcorrenciaDto fromEntity(Ocorrencia o) {
         return new OcorrenciaDto(
@@ -32,7 +37,10 @@ public record OcorrenciaDto(
                 o.getTipo(),
                 o.getDescricao(),
                 o.getAlunos().stream().map(Aluno::getId).sorted().toList(),
-                o.getAlunos().stream().map(Aluno::getNome).sorted().toList()
+                o.getAlunos().stream().map(Aluno::getNome).sorted().toList(),
+                o.getStatus(),
+                o.getMedidas(),
+                o.getAtualizadaEm()
         );
     }
 }

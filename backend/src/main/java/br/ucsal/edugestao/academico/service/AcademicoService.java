@@ -56,6 +56,7 @@ public class AcademicoService {
         entidade.setDataFim(dto.dataFim());
         entidade.setMediaMinima(dto.mediaMinima());
         entidade.setFrequenciaMinima(dto.frequenciaMinima());
+        entidade.setFormulaMedia(dto.formulaMedia() != null ? dto.formulaMedia() : FormulaMedia.PONDERADA);
         return AnoLetivoDto.fromEntity(anoLetivoRepository.save(entidade));
     }
 
@@ -68,6 +69,7 @@ public class AcademicoService {
         entidade.setDataFim(dto.dataFim());
         entidade.setMediaMinima(dto.mediaMinima());
         entidade.setFrequenciaMinima(dto.frequenciaMinima());
+        entidade.setFormulaMedia(dto.formulaMedia() != null ? dto.formulaMedia() : FormulaMedia.PONDERADA);
         return AnoLetivoDto.fromEntity(anoLetivoRepository.save(entidade));
     }
 

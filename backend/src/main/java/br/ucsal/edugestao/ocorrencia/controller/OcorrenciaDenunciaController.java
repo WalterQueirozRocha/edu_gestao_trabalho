@@ -34,6 +34,15 @@ public class OcorrenciaDenunciaController {
         return service.listarOcorrencias();
     }
 
+    @PatchMapping("/ocorrencias/{id}")
+    @PreAuthorize("hasAnyRole('COORDENADOR', 'ADMINISTRADOR')")
+    public OcorrenciaDto tratarOcorrencia(
+            @PathVariable Long id,
+            @Valid @RequestBody TratarDenunciaRequest req
+    ) {
+        return service.tratarOcorrencia(id, req);
+    }
+
     @PostMapping("/denuncias")
     @ResponseStatus(HttpStatus.CREATED)
     public DenunciaDto registrarDenuncia(@Valid @RequestBody DenunciaDto dto) {

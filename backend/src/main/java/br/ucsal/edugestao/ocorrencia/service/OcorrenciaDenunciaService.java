@@ -14,6 +14,7 @@ import br.ucsal.edugestao.pedagogico.dto.PlanoPedagogicoDto;
 import br.ucsal.edugestao.pedagogico.service.PlanoPedagogicoService;
 import br.ucsal.edugestao.seguranca.service.AcessoService;
 import br.ucsal.edugestao.usuario.entity.Aluno;
+import br.ucsal.edugestao.usuario.entity.Perfil;
 import br.ucsal.edugestao.usuario.entity.Usuario;
 import br.ucsal.edugestao.usuario.repository.AlunoRepository;
 import org.springframework.stereotype.Service;
@@ -70,16 +71,38 @@ public class OcorrenciaDenunciaService {
 
     @Transactional(readOnly = true)
     public List<OcorrenciaDto> listarOcorrencias() {
-        return ocorrenciaRepository.findAllByOrderByDataDescIdDesc().stream()
+        Usuario logado = acessoService.obterUsuarioLogado();
+        // LGPD: professor ve apenas as ocorrencias que registrou
+        List<Ocorrencia> lista = logado.getPerfil() == Perfil.PROFESSOR
+                ? ocorrenciaRepository.findByRegistradaPorIdOrderByDataDescIdDesc(logado.getId())
+                : ocorrenciaRepository.findAllByOrderByDataDescIdDesc();
+        return lista.stream()
                 .map(OcorrenciaDto::fromEntity)
                 .toList();
+    }
+
+    // UC12: tratamento de ocorrencias com os mesmos status das denuncias
+    @Transactional
+    public OcorrenciaDto tratarOcorrencia(Long id, TratarDenunciaRequest req) {
+        Ocorrencia o = ocorrenciaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Ocorrencia nao encontrada."));
+        String medidas = req.medidas();
+        if (req.status() == StatusAtendimento.ARQUIVADA) {
+            if (req.justificativaArquivamento() == null || req.justificativaArquivamento().isBlank()) {
+                throw new RegraNegocioException("A justificativa e obrigatoria para arquivar uma ocorrencia.");
+            }
+            medidas = "Arquivada: " + req.justificativaArquivamento().trim();
+        }
+        o.tratar(req.status(), medidas);
+        criarPlanoSeSolicitado(req, "Acompanhamento pedagogico decorrente da ocorrencia #" + o.getId());
+        return OcorrenciaDto.fromEntity(ocorrenciaRepository.save(o));
     }
 
     @Transactional
     public DenunciaDto registrarDenuncia(DenunciaDto dto) {
         Usuario logado = acessoService.obterUsuarioLogado();
         Denuncia d = new Denuncia();
-        String sufixo = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        String sufixo = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
         d.setProtocolo("DEN-" + LocalDate.now().getYear() + "-" + sufixo);
         d.setDescricao(dto.descricao().trim());
         d.setAnonima(dto.anonima());
@@ -95,7 +118,11 @@ public class OcorrenciaDenunciaService {
     public DenunciaDto consultarPorProtocolo(String protocolo) {
         Denuncia d = denunciaRepository.findByProtocoloIgnoreCase(protocolo.trim())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Nenhuma denuncia encontrada para o protocolo informado."));
-        return DenunciaDto.fromEntity(d, true);
+        Usuario logado = acessoService.obterUsuarioLogado();
+        boolean coordenacao = logado.getPerfil() == Perfil.COORDENADOR || logado.getPerfil() == Perfil.ADMINISTRADOR;
+        boolean autor = d.getDenunciante() != null && d.getDenunciante().getId().equals(logado.getId());
+        // LGPD: terceiros acompanham apenas o andamento, sem o conteudo da denuncia
+        return (coordenacao || autor) ? DenunciaDto.fromEntity(d, true) : DenunciaDto.andamento(d);
     }
 
     @Transactional(readOnly = true)
@@ -125,10 +152,15 @@ public class OcorrenciaDenunciaService {
             d.setAtualizadaEm(LocalDateTime.now());
         }
 
+        criarPlanoSeSolicitado(req, "Acompanhamento pedagogico decorrente do protocolo " + d.getProtocolo());
+        return DenunciaDto.fromEntity(denunciaRepository.save(d), false);
+    }
+
+    private void criarPlanoSeSolicitado(TratarDenunciaRequest req, String metasPadrao) {
         if (Boolean.TRUE.equals(req.requerAcompanhamentoPedagogico()) && req.alunoIdPlano() != null && planoPedagogicoService != null) {
             String metas = (req.metasPlano() != null && !req.metasPlano().isBlank())
                     ? req.metasPlano()
-                    : "Acompanhamento pedagogico decorrente do protocolo " + d.getProtocolo();
+                    : metasPadrao;
             String adaptacoes = (req.adaptacoesPlano() != null && !req.adaptacoesPlano().isBlank())
                     ? req.adaptacoesPlano()
                     : "Escuta ativa e acompanhamento socioemocional/pedagogico.";
@@ -154,7 +186,5 @@ public class OcorrenciaDenunciaService {
                     List.of()
             ));
         }
-
-        return DenunciaDto.fromEntity(denunciaRepository.save(d), false);
     }
 }

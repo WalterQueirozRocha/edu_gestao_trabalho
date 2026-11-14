@@ -4,6 +4,7 @@ import br.ucsal.edugestao.usuario.entity.Aluno;
 import br.ucsal.edugestao.usuario.entity.Usuario;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,10 +38,41 @@ public class Ocorrencia {
     )
     private Set<Aluno> alunos = new HashSet<>();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private StatusAtendimento status = StatusAtendimento.RECEBIDA;
+
+    @Column(columnDefinition = "TEXT")
+    private String medidas;
+
+    @Column(name = "atualizada_em")
+    private LocalDateTime atualizadaEm;
+
     public void registrar() {
         if (this.data == null) {
             this.data = LocalDate.now();
         }
+    }
+
+    // UC12: tratamento da ocorrencia pela coordenacao
+    public void tratar(StatusAtendimento novoStatus, String medidasAdotadas) {
+        this.status = novoStatus;
+        if (medidasAdotadas != null && !medidasAdotadas.isBlank()) {
+            this.medidas = medidasAdotadas.trim();
+        }
+        this.atualizadaEm = LocalDateTime.now();
+    }
+
+    public StatusAtendimento getStatus() {
+        return status;
+    }
+
+    public String getMedidas() {
+        return medidas;
+    }
+
+    public LocalDateTime getAtualizadaEm() {
+        return atualizadaEm;
     }
 
     public Long getId() {

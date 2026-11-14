@@ -10,6 +10,8 @@ import java.util.List;
 public interface OcorrenciaRepository extends JpaRepository<Ocorrencia, Long> {
     List<Ocorrencia> findAllByOrderByDataDescIdDesc();
 
+    List<Ocorrencia> findByRegistradaPorIdOrderByDataDescIdDesc(Long registradaPorId);
+
     @Query("SELECT COUNT(o) FROM Ocorrencia o JOIN o.alunos a WHERE a.id = :alunoId")
     long countByAlunoId(@Param("alunoId") Long alunoId);
 }

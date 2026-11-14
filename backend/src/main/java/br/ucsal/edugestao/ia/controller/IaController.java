@@ -32,6 +32,7 @@ public class IaController {
     }
 
     @PostMapping("/alertas/{id}/converter")
+    @PreAuthorize("hasRole('COORDENADOR')")
     public PlanoPedagogicoDto converterEmPlano(
             @PathVariable Long id,
             @RequestBody(required = false) ConverterAlertaRequest req

@@ -4,5 +4,6 @@ public enum StatusMatricula {
     ATIVA,
     ENCERRADA,
     TRANSFERIDA,
-    CANCELADA
+    CANCELADA,
+    EVADIDA
 }

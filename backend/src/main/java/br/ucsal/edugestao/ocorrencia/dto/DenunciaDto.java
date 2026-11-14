@@ -35,4 +35,9 @@ public record DenunciaDto(
                 d.getAtualizadaEm()
         );
     }
+
+    public static DenunciaDto andamento(Denuncia d) {
+        return new DenunciaDto(null, d.getProtocolo(), null, d.isAnonima(), null, null,
+                d.getStatus(), null, null, d.getCriadaEm(), d.getAtualizadaEm());
+    }
 }

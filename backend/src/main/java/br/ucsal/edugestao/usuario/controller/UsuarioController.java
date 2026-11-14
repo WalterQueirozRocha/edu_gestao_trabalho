@@ -9,6 +9,7 @@ import br.ucsal.edugestao.usuario.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +26,13 @@ public class UsuarioController {
 
     @GetMapping("/usuarios")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'COORDENADOR', 'PROFESSOR')")
-    public List<UsuarioResponse> listar(@RequestParam(required = false) Perfil perfil) {
+    public List<UsuarioResponse> listar(@RequestParam(required = false) Perfil perfil, Authentication auth) {
+        boolean professor = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_PROFESSOR"));
+        // LGPD: professor so lista estudantes, sem dados pessoais
+        if (professor) {
+            return usuarioService.listarResumoAlunos();
+        }
         return usuarioService.listar(perfil);
     }
 

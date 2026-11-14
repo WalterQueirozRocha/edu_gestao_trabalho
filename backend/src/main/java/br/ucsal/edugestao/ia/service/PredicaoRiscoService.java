@@ -1,11 +1,17 @@
 package br.ucsal.edugestao.ia.service;
 
+import br.ucsal.edugestao.academico.entity.Etapa;
 import br.ucsal.edugestao.academico.entity.Matricula;
+import br.ucsal.edugestao.academico.entity.StatusEtapa;
 import br.ucsal.edugestao.academico.entity.StatusMatricula;
 import br.ucsal.edugestao.academico.entity.TurmaDisciplina;
+import br.ucsal.edugestao.academico.repository.EtapaRepository;
 import br.ucsal.edugestao.academico.repository.MatriculaRepository;
 import br.ucsal.edugestao.academico.repository.TurmaDisciplinaRepository;
+import br.ucsal.edugestao.avaliacao.entity.Boletim;
 import br.ucsal.edugestao.avaliacao.entity.Nota;
+import br.ucsal.edugestao.avaliacao.entity.Situacao;
+import br.ucsal.edugestao.avaliacao.repository.BoletimRepository;
 import br.ucsal.edugestao.avaliacao.repository.NotaRepository;
 import br.ucsal.edugestao.avaliacao.service.AvaliacaoService;
 import br.ucsal.edugestao.config.RecursoNaoEncontradoException;
@@ -25,8 +31,6 @@ import br.ucsal.edugestao.ia.repository.AlertaRiscoRepository;
 import br.ucsal.edugestao.ia.repository.ModeloPreditivoRepository;
 import br.ucsal.edugestao.ocorrencia.repository.OcorrenciaRepository;
 import br.ucsal.edugestao.pedagogico.dto.PlanoPedagogicoDto;
-import br.ucsal.edugestao.pedagogico.entity.PlanoPedagogico;
-import br.ucsal.edugestao.pedagogico.repository.PlanoPedagogicoRepository;
 import br.ucsal.edugestao.pedagogico.service.PlanoPedagogicoService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -51,7 +55,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PredicaoRiscoService {
@@ -72,7 +78,8 @@ public class PredicaoRiscoService {
     private final NotaRepository notaRepository;
     private final FrequenciaRepository frequenciaRepository;
     private final OcorrenciaRepository ocorrenciaRepository;
-    private final PlanoPedagogicoRepository planoRepository;
+    private final EtapaRepository etapaRepository;
+    private final BoletimRepository boletimRepository;
     private final PlanoPedagogicoService planoService;
     private final AvaliacaoService avaliacaoService;
     private final FrequenciaService frequenciaService;
@@ -90,7 +97,8 @@ public class PredicaoRiscoService {
             NotaRepository notaRepository,
             FrequenciaRepository frequenciaRepository,
             OcorrenciaRepository ocorrenciaRepository,
-            PlanoPedagogicoRepository planoRepository,
+            EtapaRepository etapaRepository,
+            BoletimRepository boletimRepository,
             PlanoPedagogicoService planoService,
             AvaliacaoService avaliacaoService,
             FrequenciaService frequenciaService
@@ -102,7 +110,8 @@ public class PredicaoRiscoService {
         this.notaRepository = notaRepository;
         this.frequenciaRepository = frequenciaRepository;
         this.ocorrenciaRepository = ocorrenciaRepository;
-        this.planoRepository = planoRepository;
+        this.etapaRepository = etapaRepository;
+        this.boletimRepository = boletimRepository;
         this.planoService = planoService;
         this.avaliacaoService = avaliacaoService;
         this.frequenciaService = frequenciaService;
@@ -115,7 +124,9 @@ public class PredicaoRiscoService {
         MutableDataset<Label> trainDataset = new MutableDataset<>(provenance, labelFactory);
         MutableDataset<Label> testDataset = new MutableDataset<>(provenance, labelFactory);
 
+        // IA §10.1: base de referencia (CSV) + historico real da escola
         List<ArrayExample<Label>> exemplos = carregarExemplosCsv();
+        exemplos.addAll(carregarExemplosHistorico());
         this.amostrasTreino = exemplos.size();
         for (int i = 0; i < exemplos.size(); i++) {
             if (i % 5 == 0) {
@@ -168,14 +179,20 @@ public class PredicaoRiscoService {
             BigDecimal probabilidade = calcularProbabilidadeRisco(features);
             NivelRisco nivel = classificarNivelRisco(probabilidade);
 
-            if (nivel == NivelRisco.BAIXO) {
-                continue;
-            }
-
             List<AlertaRisco> alertasNovosExistentes = alertaRepository.findByAlunoIdAndStatus(
                     m.getAluno().getId(),
                     StatusAlerta.NOVO
             );
+
+            if (nivel == NivelRisco.BAIXO) {
+                // Risco voltou ao normal: alertas pendentes deixam de valer
+                alertasNovosExistentes.forEach(a -> {
+                    a.encerrar();
+                    alertaRepository.save(a);
+                });
+                continue;
+            }
+
             AlertaRisco alerta = alertasNovosExistentes.isEmpty()
                     ? new AlertaRisco()
                     : alertasNovosExistentes.get(0);
@@ -184,7 +201,8 @@ public class PredicaoRiscoService {
             alerta.setModelo(modeloAtivo);
             alerta.setNivel(nivel);
             alerta.setProbabilidade(probabilidade);
-            alerta.setFatores(identificarFatoresContribuintes(features));
+            alerta.setFatores("Tendencia predominante: risco de " + identificarTendencia(features)
+                    + "; " + identificarFatoresContribuintes(features));
             alerta.setSugestoes(gerarSugestoesPedagogicas(features));
             alerta.setDataGeracao(LocalDateTime.now());
             alerta.setStatus(StatusAlerta.NOVO);
@@ -262,30 +280,56 @@ public class PredicaoRiscoService {
     public BigDecimal calcularProbabilidadeRisco(FeaturesAlunoDto f) {
         BigDecimal probRegras = calcularProbabilidadePorRegras(f);
 
-        if (modeloTribuoEmMemoria != null && amostrasTreino >= MINIMO_AMOSTRAS_TREINO) {
-            try {
-                double[] valores = {
-                        f.mediaGeral().doubleValue(),
-                        f.menorMediaDisciplina().doubleValue(),
-                        f.disciplinasAbaixoMedia(),
-                        f.frequenciaGeral().doubleValue(),
-                        f.quedaFrequencia().doubleValue(),
-                        f.numOcorrencias()
-                };
-                ArrayExample<Label> exemplo = new ArrayExample<>(new Label("RETIDO"), FEATURE_NAMES, valores);
-                Prediction<Label> pred = modeloTribuoEmMemoria.predict(exemplo);
-                Label retidoScore = pred.getOutputScores().get("RETIDO");
-                if (retidoScore != null && !Double.isNaN(retidoScore.getScore())) {
-                    BigDecimal probTribuo = BigDecimal.valueOf(retidoScore.getScore())
-                            .setScale(4, RoundingMode.HALF_UP);
-                    // Garante que alertas preventivos de regimento (<80% freq ou <mediaMinima) nunca fiquem abaixo de MEDIO
-                    return probTribuo.max(probRegras).setScale(4, RoundingMode.HALF_UP);
-                }
-            } catch (Exception ignored) {
-                // Fallback deterministico por regras quando modelo indisponivel
-            }
+        Map<String, Double> scores = preverScores(f);
+        Double aprovado = scores.get("APROVADO");
+        if (aprovado != null && !Double.isNaN(aprovado)) {
+            // Risco = retencao + evasao = 1 - P(aprovado)
+            BigDecimal probTribuo = BigDecimal.valueOf(1.0 - aprovado).setScale(4, RoundingMode.HALF_UP);
+            // Garante que alertas preventivos de regimento (<80% freq ou <mediaMinima) nunca fiquem abaixo de MEDIO
+            return probTribuo.max(probRegras).setScale(4, RoundingMode.HALF_UP);
         }
         return probRegras;
+    }
+
+    // UC15: indica se o risco tende a retencao ou a evasao
+    public String identificarTendencia(FeaturesAlunoDto f) {
+        Map<String, Double> scores = preverScores(f);
+        Double evadido = scores.get("EVADIDO");
+        Double retido = scores.get("RETIDO");
+        if (evadido != null && retido != null) {
+            return evadido > retido ? "evasao" : "retencao";
+        }
+        // Fallback por regras: ausencia acentuada sinaliza evasao
+        boolean sinalEvasao = f.frequenciaGeral().compareTo(new BigDecimal("75.00")) < 0
+                || f.quedaFrequencia().compareTo(new BigDecimal("10.00")) >= 0;
+        return sinalEvasao ? "evasao" : "retencao";
+    }
+
+    // Probabilidade por classe; vazio quando o modelo esta indisponivel (fallback por regras)
+    private Map<String, Double> preverScores(FeaturesAlunoDto f) {
+        Map<String, Double> scores = new HashMap<>();
+        if (modeloTribuoEmMemoria == null || amostrasTreino < MINIMO_AMOSTRAS_TREINO) {
+            return scores;
+        }
+        try {
+            ArrayExample<Label> exemplo = new ArrayExample<>(new Label("APROVADO"), FEATURE_NAMES, valoresFeatures(f));
+            Prediction<Label> pred = modeloTribuoEmMemoria.predict(exemplo);
+            pred.getOutputScores().forEach((rotulo, label) -> scores.put(rotulo, label.getScore()));
+        } catch (Exception ignored) {
+            scores.clear();
+        }
+        return scores;
+    }
+
+    private double[] valoresFeatures(FeaturesAlunoDto f) {
+        return new double[]{
+                f.mediaGeral().doubleValue(),
+                f.menorMediaDisciplina().doubleValue(),
+                f.disciplinasAbaixoMedia(),
+                f.frequenciaGeral().doubleValue(),
+                f.quedaFrequencia().doubleValue(),
+                f.numOcorrencias()
+        };
     }
 
     public BigDecimal calcularProbabilidadePorRegras(FeaturesAlunoDto f) {
@@ -378,40 +422,22 @@ public class PredicaoRiscoService {
     // UC18 e RN-08/RN-09: Sugestoes exclusivamente pedagogicas, sem diagnostico clinico
     public String gerarSugestoesPedagogicas(FeaturesAlunoDto f) {
         List<String> sugestoes = new ArrayList<>();
-        String fatorPrincipalChave = "";
 
         if (f.frequenciaGeral().compareTo(new BigDecimal("80.00")) < 0) {
             sugestoes.add("Contato preventivo com o responsavel para alinhamento de assiduidade");
-            fatorPrincipalChave = "frequencia";
+        }
+        if (f.quedaFrequencia().compareTo(new BigDecimal("10.00")) >= 0) {
+            sugestoes.add("Busca ativa pela coordenacao para entender a queda recente de presenca e prevenir a evasao");
         }
         if (f.mediaGeral().compareTo(f.mediaMinimaRegimento()) < 0 || f.disciplinasAbaixoMedia() > 0) {
             sugestoes.add("Atividades de reforco pedagogico no contraturno e monitoria orientada");
             sugestoes.add("Ajuste na forma de avaliacao em etapas menores com feedback continuo");
-            if (fatorPrincipalChave.isEmpty()) {
-                fatorPrincipalChave = "media";
-            }
         }
         if (f.numOcorrencias() > 0) {
             sugestoes.add("Escuta pedagogica individualizada pela coordenacao e pactuacao de metas semanais");
-            if (fatorPrincipalChave.isEmpty()) {
-                fatorPrincipalChave = "ocorrencia";
-            }
         }
-
-        if (planoRepository != null) {
-            List<PlanoPedagogico> planosExistentes = planoRepository.findAllByOrderByDataRevisaoAsc();
-            if (!planosExistentes.isEmpty()) {
-                final String chave = fatorPrincipalChave;
-                PlanoPedagogico planoCompativel = planosExistentes.stream()
-                        .filter(p -> !chave.isEmpty() && (
-                                (p.getAlertaOrigem() != null && p.getAlertaOrigem().getFatores().toLowerCase().contains(chave))
-                                        || p.getMetas().toLowerCase().contains(chave)
-                                        || p.getEstrategias().toLowerCase().contains(chave)
-                        ))
-                        .findFirst()
-                        .orElse(planosExistentes.get(0));
-                sugestoes.add("Referencia de plano anterior: " + planoCompativel.getEstrategias());
-            }
+        if (sugestoes.isEmpty()) {
+            sugestoes.add("Manter acompanhamento pedagogico regular e revisar os indicadores na proxima etapa");
         }
         return String.join("; ", sugestoes);
     }
@@ -433,7 +459,7 @@ public class PredicaoRiscoService {
                     .filter(n -> n.getAvaliacao().getTurmaDisciplina().getId().equals(td.getId()))
                     .toList();
             if (!notasDisc.isEmpty()) {
-                BigDecimal mediaDisc = avaliacaoService.calcularMediaPonderada(notasDisc);
+                BigDecimal mediaDisc = avaliacaoService.calcularMedia(notasDisc, m.getTurma().getAnoLetivo().getFormulaMedia());
                 somaMedias = somaMedias.add(mediaDisc);
                 comNotas++;
                 if (mediaDisc.compareTo(menorMedia) < 0) {
@@ -523,5 +549,40 @@ public class PredicaoRiscoService {
             throw new IllegalStateException("Falha ao ler CSV de treinamento da IA", e);
         }
         return lista;
+    }
+
+    // ponytail: varre todas as matriculas a cada treino; paginar se o historico crescer muito
+    private List<ArrayExample<Label>> carregarExemplosHistorico() {
+        List<ArrayExample<Label>> lista = new ArrayList<>();
+        for (Matricula m : matriculaRepository.findAll()) {
+            String rotulo = situacaoFinal(m);
+            if (rotulo != null) {
+                lista.add(new ArrayExample<>(new Label(rotulo), FEATURE_NAMES, valoresFeatures(extrairFeatures(m))));
+            }
+        }
+        return lista;
+    }
+
+    // Rotulo de treino: EVADIDO pela matricula ou APROVADO/RETIDO pelo boletim da ultima etapa ja fechada do ano
+    private String situacaoFinal(Matricula m) {
+        if (m.getStatus() == StatusMatricula.EVADIDA) {
+            return "EVADIDO";
+        }
+        if (m.getStatus() != StatusMatricula.ATIVA && m.getStatus() != StatusMatricula.ENCERRADA) {
+            return null;
+        }
+        List<Etapa> etapas = etapaRepository.findByAnoLetivoIdOrderByDataInicioAsc(m.getTurma().getAnoLetivo().getId());
+        if (etapas.isEmpty()) {
+            return null;
+        }
+        Etapa ultima = etapas.get(etapas.size() - 1);
+        if (ultima.getStatus() == StatusEtapa.ABERTA) {
+            return null;
+        }
+        return boletimRepository.findByMatriculaIdAndEtapaId(m.getId(), ultima.getId())
+                .map(Boletim::getSituacao)
+                .filter(s -> s != Situacao.EM_ANDAMENTO)
+                .map(Enum::name)
+                .orElse(null);
     }
 }

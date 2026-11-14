@@ -28,7 +28,7 @@ public class PlanoPedagogicoController {
 
     @PostMapping("/planos")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('COORDENADOR', 'ADMINISTRADOR')")
+    @PreAuthorize("hasRole('COORDENADOR')")
     public PlanoPedagogicoDto criarPlano(@Valid @RequestBody PlanoPedagogicoDto dto) {
         return planoService.criar(dto);
     }

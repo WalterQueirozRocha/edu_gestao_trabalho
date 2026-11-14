@@ -21,6 +21,13 @@ public record UsuarioResponse(
         String telefone,
         List<Long> responsaveisIds
 ) {
+    // LGPD: apenas identificacao do estudante, sem dados pessoais
+    public static UsuarioResponse resumo(Usuario u) {
+        String matricula = u instanceof Aluno a ? a.getMatricula() : null;
+        return new UsuarioResponse(u.getId(), u.getNome(), null, u.getPerfil(), u.isAtivo(),
+                null, null, null, null, matricula, null, null, null, List.of());
+    }
+
     public static UsuarioResponse fromEntity(Usuario u) {
         String cargo = null;
         String registroFuncional = null;

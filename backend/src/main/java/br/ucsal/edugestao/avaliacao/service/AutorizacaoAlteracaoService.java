@@ -8,6 +8,7 @@ import br.ucsal.edugestao.academico.repository.TurmaDisciplinaRepository;
 import br.ucsal.edugestao.avaliacao.dto.AutorizacaoAlteracaoDto;
 import br.ucsal.edugestao.avaliacao.entity.AutorizacaoAlteracao;
 import br.ucsal.edugestao.avaliacao.repository.AutorizacaoAlteracaoRepository;
+import br.ucsal.edugestao.config.AcessoNegadoNegocioException;
 import br.ucsal.edugestao.config.RecursoNaoEncontradoException;
 import br.ucsal.edugestao.config.RegraNegocioException;
 import br.ucsal.edugestao.seguranca.service.AcessoService;
@@ -51,9 +52,9 @@ public class AutorizacaoAlteracaoService {
         TurmaDisciplina td = turmaDisciplinaRepository.findById(dto.turmaDisciplinaId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Turma/disciplina nao encontrada."));
         Usuario logado = acessoService.obterUsuarioLogado();
+        // RN-04: a autorizacao e sempre registrada em nome do coordenador que a concedeu
         Coordenador coord = coordenadorRepository.findById(logado.getId())
-                .orElseGet(() -> coordenadorRepository.findAll().stream().findFirst()
-                        .orElseThrow(() -> new RecursoNaoEncontradoException("Coordenador nao encontrado.")));
+                .orElseThrow(() -> new AcessoNegadoNegocioException("RN-04: somente a coordenacao pode autorizar alteracoes."));
 
         AutorizacaoAlteracao auth = new AutorizacaoAlteracao();
         auth.setEtapa(etapa);

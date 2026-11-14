@@ -1,4 +1,4 @@
-media_geral,menor_media_disciplina,disciplinas_abaixo_media,frequencia_geral,queda_frequencia,num_ocorrencias,risco_retencao
+media_geral,menor_media_disciplina,disciplinas_abaixo_media,frequencia_geral,queda_frequencia,num_ocorrencias,situacao_final
 8.5,7.8,0,95.0,0.0,0,APROVADO
 7.9,7.0,0,92.5,1.0,0,APROVADO
 7.2,6.5,0,88.0,2.0,0,APROVADO
@@ -39,3 +39,19 @@ media_geral,menor_media_disciplina,disciplinas_abaixo_media,frequencia_geral,que
 5.2,4.4,2,67.5,12.5,2,RETIDO
 4.7,4.0,2,63.5,14.5,2,RETIDO
 5.9,5.3,1,74.5,7.5,2,RETIDO
+6.2,5.6,1,48.0,32.0,1,EVADIDO
+6.8,6.0,0,52.0,28.0,0,EVADIDO
+5.9,5.1,1,45.0,35.0,1,EVADIDO
+6.5,5.8,1,55.0,26.0,0,EVADIDO
+7.0,6.2,0,50.0,30.0,0,EVADIDO
+5.7,5.0,1,42.0,38.0,2,EVADIDO
+6.1,5.4,1,47.5,31.0,1,EVADIDO
+6.9,6.1,0,58.0,24.0,0,EVADIDO
+6.3,5.5,1,44.0,36.0,1,EVADIDO
+6.6,5.9,0,53.5,27.5,0,EVADIDO
+5.8,5.2,1,40.0,40.0,1,EVADIDO
+6.4,5.7,1,49.0,29.0,0,EVADIDO
+7.2,6.4,0,56.0,25.0,0,EVADIDO
+6.0,5.3,1,46.0,33.0,1,EVADIDO
+6.7,6.0,0,51.0,30.5,0,EVADIDO
+5.6,4.9,1,43.0,37.0,2,EVADIDO

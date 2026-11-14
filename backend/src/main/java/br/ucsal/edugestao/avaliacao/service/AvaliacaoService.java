@@ -1,6 +1,7 @@
 package br.ucsal.edugestao.avaliacao.service;
 
 import br.ucsal.edugestao.academico.entity.Etapa;
+import br.ucsal.edugestao.academico.entity.FormulaMedia;
 import br.ucsal.edugestao.academico.entity.Matricula;
 import br.ucsal.edugestao.academico.entity.TurmaDisciplina;
 import br.ucsal.edugestao.academico.repository.EtapaRepository;
@@ -135,6 +136,7 @@ public class AvaliacaoService {
             }
             Matricula matricula = matriculaRepository.findById(item.matriculaId())
                     .orElseThrow(() -> new RecursoNaoEncontradoException("Matricula nao encontrada: " + item.matriculaId()));
+            matricula.validarAtivaNaTurma(avaliacao.getTurmaDisciplina().getTurma().getId());
             Nota nota = notaRepository.findByAvaliacaoIdAndMatriculaId(avaliacaoId, matricula.getId())
                     .orElseGet(() -> {
                         Nota nova = new Nota();
@@ -147,6 +149,18 @@ public class AvaliacaoService {
             resultado.add(NotaItemDto.fromEntity(notaRepository.save(nota)));
         }
         return resultado;
+    }
+
+    // RN-03: formula configurada no ano letivo
+    public BigDecimal calcularMedia(List<Nota> notas, FormulaMedia formula) {
+        if (formula != FormulaMedia.ARITMETICA) {
+            return calcularMediaPonderada(notas);
+        }
+        if (notas == null || notas.isEmpty()) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal soma = notas.stream().map(Nota::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return soma.divide(BigDecimal.valueOf(notas.size()), 2, RoundingMode.HALF_UP);
     }
 
     // RN-03: Calculo da media ponderada pelos pesos das avaliacoes da etapa

@@ -29,6 +29,10 @@ public class AnoLetivo {
     @Column(name = "frequencia_minima", nullable = false, precision = 5, scale = 2)
     private BigDecimal frequenciaMinima = new BigDecimal("75.00");
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "formula_media", nullable = false, length = 20)
+    private FormulaMedia formulaMedia = FormulaMedia.PONDERADA;
+
     @OneToMany(mappedBy = "anoLetivo", fetch = FetchType.LAZY)
     private List<Etapa> etapas = new ArrayList<>();
 
@@ -41,6 +45,14 @@ public class AnoLetivo {
                         .filter(e -> e.getStatus() == StatusEtapa.ABERTA)
                         .findFirst()
                         .orElse(etapas.isEmpty() ? null : etapas.get(0)));
+    }
+
+    public FormulaMedia getFormulaMedia() {
+        return formulaMedia;
+    }
+
+    public void setFormulaMedia(FormulaMedia formulaMedia) {
+        this.formulaMedia = formulaMedia;
     }
 
     public List<Etapa> getEtapas() {

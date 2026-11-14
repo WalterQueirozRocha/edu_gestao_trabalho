@@ -122,6 +122,7 @@ public class FrequenciaService {
         for (FrequenciaItemDto item : itens) {
             Matricula matricula = matriculaRepository.findById(item.matriculaId())
                     .orElseThrow(() -> new RecursoNaoEncontradoException("Matricula nao encontrada: " + item.matriculaId()));
+            matricula.validarAtivaNaTurma(aula.getTurmaDisciplina().getTurma().getId());
             Frequencia freq = frequenciaRepository.findByAulaIdAndMatriculaId(aulaId, matricula.getId())
                     .orElseGet(() -> {
                         Frequencia nova = new Frequencia();
@@ -161,15 +162,9 @@ public class FrequenciaService {
             if (logado.getPerfil() == Perfil.ALUNO || logado.getPerfil() == Perfil.RESPONSAVEL) {
                 acessoService.validarAcessoAoAluno(matricula.getAluno().getId());
             } else if (logado.getPerfil() == Perfil.PROFESSOR) {
-                boolean lecionaNaTurma = turmaDisciplinaRepository
-                        .findByTurmaIdOrderByDisciplinaNomeAsc(matricula.getTurma().getId())
-                        .stream()
-                        .anyMatch(td -> td.getProfessor().getId().equals(logado.getId()));
-                if (!lecionaNaTurma) {
-                    throw new br.ucsal.edugestao.config.AcessoNegadoNegocioException(
-                            "Professor nao vinculado a turma deste estudante."
-                    );
-                }
+                acessoService.validarProfessorDaTurma(matricula.getTurma().getId());
+            } else if (logado.getPerfil() == Perfil.PROFISSIONAL_APOIO) {
+                acessoService.validarProfissionalApoioDoAluno(matricula.getAluno().getId());
             }
         } catch (org.springframework.security.authentication.BadCredentialsException ignored) {
             // Contexto interno ou job agendado

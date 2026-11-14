@@ -1,6 +1,7 @@
 package br.ucsal.edugestao.academico.entity;
 
 import br.ucsal.edugestao.avaliacao.entity.Nota;
+import br.ucsal.edugestao.config.RegraNegocioException;
 import br.ucsal.edugestao.diario.entity.Frequencia;
 import br.ucsal.edugestao.usuario.entity.Aluno;
 import jakarta.persistence.*;
@@ -41,6 +42,13 @@ public class Matricula {
 
     public void encerrar() {
         this.status = StatusMatricula.ENCERRADA;
+    }
+
+    // Notas e frequencias so podem ser lancadas para matriculas ativas da propria turma
+    public void validarAtivaNaTurma(Long turmaId) {
+        if (status != StatusMatricula.ATIVA || !turma.getId().equals(turmaId)) {
+            throw new RegraNegocioException("Matricula " + id + " nao pertence a esta turma ou nao esta ativa.");
+        }
     }
 
     public BigDecimal calcularFrequencia() {

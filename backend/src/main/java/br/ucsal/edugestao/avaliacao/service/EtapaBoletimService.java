@@ -117,9 +117,18 @@ public class EtapaBoletimService {
         Etapa salva = etapaRepository.save(etapa);
         consolidarBoletinsDaEtapa(salva, false);
         if (predicaoRiscoService != null) {
+            if (ehUltimaEtapaDoAno(salva)) {
+                // IA §10: retreino ao final de cada ano letivo
+                predicaoRiscoService.treinarModelo();
+            }
             predicaoRiscoService.executarPredicaoParaAlunosAtivos();
         }
         return EtapaDto.fromEntity(salva);
+    }
+
+    private boolean ehUltimaEtapaDoAno(Etapa etapa) {
+        List<Etapa> etapasDoAno = etapaRepository.findByAnoLetivoIdOrderByDataInicioAsc(etapa.getAnoLetivo().getId());
+        return !etapasDoAno.isEmpty() && etapasDoAno.get(etapasDoAno.size() - 1).getId().equals(etapa.getId());
     }
 
     @Transactional
@@ -148,6 +157,7 @@ public class EtapaBoletimService {
 
     @Transactional(readOnly = true)
     public List<ResultadoAlunoTurmaDto> consultarResultadosDaTurma(Long turmaId, Long etapaId) {
+        acessoService.validarProfessorDaTurma(turmaId);
         Turma turma = turmaRepository.findById(turmaId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Turma nao encontrada."));
         Etapa etapa = etapaId != null
@@ -266,7 +276,7 @@ public class EtapaBoletimService {
             List<Nota> notasDisc = notasNaEtapa.stream()
                     .filter(n -> n.getAvaliacao().getTurmaDisciplina().getId().equals(td.getId()))
                     .toList();
-            BigDecimal mediaDisc = avaliacaoService.calcularMediaPonderada(notasDisc);
+            BigDecimal mediaDisc = avaliacaoService.calcularMedia(notasDisc, anoLetivo.getFormulaMedia());
             BigDecimal freqDisc = frequenciaService.calcularPercentualPorDisciplina(matricula.getId(), td.getId());
             boolean aprovadoMedia = notasDisc.isEmpty() || mediaDisc.compareTo(mediaMinima) >= 0;
             boolean aprovadoFreq = freqDisc.compareTo(freqMinima) >= 0;

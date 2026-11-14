@@ -1,5 +1,6 @@
 package br.ucsal.edugestao.pedagogico.service;
 
+import br.ucsal.edugestao.config.AcessoNegadoNegocioException;
 import br.ucsal.edugestao.config.RecursoNaoEncontradoException;
 import br.ucsal.edugestao.ia.entity.AlertaRisco;
 import br.ucsal.edugestao.ia.repository.AlertaRiscoRepository;
@@ -119,7 +120,6 @@ public class PlanoPedagogicoService {
     public Coordenador obterCoordenadorAtual() {
         Usuario logado = acessoService.obterUsuarioLogado();
         return coordenadorRepository.findById(logado.getId())
-                .orElseGet(() -> coordenadorRepository.findAll().stream().findFirst()
-                        .orElseThrow(() -> new RecursoNaoEncontradoException("Coordenador nao encontrado.")));
+                .orElseThrow(() -> new AcessoNegadoNegocioException("Somente a coordenacao pode criar planos pedagogicos."));
     }
 }

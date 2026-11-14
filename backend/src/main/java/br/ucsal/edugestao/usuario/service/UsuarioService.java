@@ -44,12 +44,23 @@ public class UsuarioService {
         return lista.stream().map(UsuarioResponse::fromEntity).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<UsuarioResponse> listarResumoAlunos() {
+        return usuarioRepository.findByPerfilOrderByNomeAsc(Perfil.ALUNO).stream()
+                .map(UsuarioResponse::resumo)
+                .toList();
+    }
+
     @Transactional
     public UsuarioResponse criar(UsuarioRequest req) {
         if (usuarioRepository.existsByEmailIgnoreCase(req.email())) {
             throw new RegraNegocioException("Ja existe um usuario cadastrado com o e-mail informado.");
         }
-        String senhaBruta = (req.senha() != null && !req.senha().isBlank()) ? req.senha() : "123456";
+        // RNF-02: sem senha padrao; a senha inicial e definida pelo administrador
+        if (req.senha() == null || req.senha().length() < 8) {
+            throw new RegraNegocioException("Senha inicial obrigatoria, com no minimo 8 caracteres.");
+        }
+        String senhaBruta = req.senha();
         Usuario usuario = instanciarPorPerfil(req.perfil());
         preencherCampos(usuario, req);
         usuario.setSenhaHash(passwordEncoder.encode(senhaBruta));
@@ -65,6 +76,9 @@ public class UsuarioService {
         }
         preencherCampos(usuario, req);
         if (req.senha() != null && !req.senha().isBlank()) {
+            if (req.senha().length() < 8) {
+                throw new RegraNegocioException("A nova senha deve ter no minimo 8 caracteres.");
+            }
             usuario.setSenhaHash(passwordEncoder.encode(req.senha()));
         }
         return UsuarioResponse.fromEntity(usuarioRepository.save(usuario));

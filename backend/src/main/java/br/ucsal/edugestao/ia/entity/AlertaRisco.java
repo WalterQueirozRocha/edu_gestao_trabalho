@@ -48,6 +48,10 @@ public class AlertaRisco {
         this.status = StatusAlerta.DESCARTADO;
     }
 
+    public void encerrar() {
+        this.status = StatusAlerta.ENCERRADO;
+    }
+
     public void marcarConvertido() {
         this.status = StatusAlerta.CONVERTIDO;
     }

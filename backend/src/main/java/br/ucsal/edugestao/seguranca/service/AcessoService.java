@@ -1,8 +1,10 @@
 package br.ucsal.edugestao.seguranca.service;
 
 import br.ucsal.edugestao.academico.entity.TurmaDisciplina;
+import br.ucsal.edugestao.academico.repository.TurmaDisciplinaRepository;
 import br.ucsal.edugestao.config.AcessoNegadoNegocioException;
 import br.ucsal.edugestao.config.RecursoNaoEncontradoException;
+import br.ucsal.edugestao.pedagogico.repository.PlanoPedagogicoRepository;
 import br.ucsal.edugestao.usuario.entity.Perfil;
 import br.ucsal.edugestao.usuario.entity.Usuario;
 import br.ucsal.edugestao.usuario.repository.AlunoRepository;
@@ -17,10 +19,19 @@ public class AcessoService {
 
     private final UsuarioRepository usuarioRepository;
     private final AlunoRepository alunoRepository;
+    private final TurmaDisciplinaRepository turmaDisciplinaRepository;
+    private final PlanoPedagogicoRepository planoRepository;
 
-    public AcessoService(UsuarioRepository usuarioRepository, AlunoRepository alunoRepository) {
+    public AcessoService(
+            UsuarioRepository usuarioRepository,
+            AlunoRepository alunoRepository,
+            TurmaDisciplinaRepository turmaDisciplinaRepository,
+            PlanoPedagogicoRepository planoRepository
+    ) {
         this.usuarioRepository = usuarioRepository;
         this.alunoRepository = alunoRepository;
+        this.turmaDisciplinaRepository = turmaDisciplinaRepository;
+        this.planoRepository = planoRepository;
     }
 
     public Usuario obterUsuarioLogado() {
@@ -73,5 +84,31 @@ public class AcessoService {
             return;
         }
         throw new AcessoNegadoNegocioException("Professor nao vinculado a esta turma/disciplina.");
+    }
+
+    // LGPD: professor so acessa turmas em que leciona; demais perfis sao filtrados no controller
+    public void validarProfessorDaTurma(Long turmaId) {
+        Usuario logado = obterUsuarioLogado();
+        if (logado.getPerfil() != Perfil.PROFESSOR) {
+            return;
+        }
+        boolean leciona = turmaDisciplinaRepository.findByTurmaIdOrderByDisciplinaNomeAsc(turmaId).stream()
+                .anyMatch(td -> td.getProfessor().getId().equals(logado.getId()));
+        if (!leciona) {
+            throw new AcessoNegadoNegocioException("Professor nao vinculado a esta turma.");
+        }
+    }
+
+    // RN-08: profissional de apoio so acessa estudantes de planos em que foi autorizado
+    public void validarProfissionalApoioDoAluno(Long alunoId) {
+        Usuario logado = obterUsuarioLogado();
+        if (logado.getPerfil() != Perfil.PROFISSIONAL_APOIO) {
+            return;
+        }
+        boolean autorizado = planoRepository.findByProfissionalAutorizadoId(logado.getId()).stream()
+                .anyMatch(p -> p.getAluno().getId().equals(alunoId));
+        if (!autorizado) {
+            throw new AcessoNegadoNegocioException("RN-08: Profissional de apoio nao autorizado no plano deste estudante.");
+        }
     }
 }
