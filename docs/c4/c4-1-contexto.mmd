@@ -1,0 +1,18 @@
+C4Context
+    title EduGestão - Nível 1: Diagrama de Contexto
+
+    Person(admin, "Administrador", "Secretaria: usuários, vínculos, cadastros acadêmicos e matrículas")
+    Person(coord, "Coordenador", "Fecha/publica etapas, autoriza alterações, comunicados, denúncias, planos e alertas de IA")
+    Person(prof, "Professor", "Diário de classe, avaliações, notas e ocorrências")
+    Person(apoio, "Profissional de Apoio", "Acompanha planos pedagógicos autorizados")
+    Person(aluno, "Aluno", "Boletim publicado, comunicados e denúncias")
+    Person(resp, "Responsável", "Boletim e frequência dos estudantes vinculados")
+
+    System(edugestao, "EduGestão", "Sistema de gestão acadêmica e acompanhamento escolar com predição de risco de retenção e evasão")
+
+    Rel(admin, edugestao, "Usa", "HTTPS")
+    Rel(coord, edugestao, "Usa", "HTTPS")
+    Rel(prof, edugestao, "Usa", "HTTPS")
+    Rel(apoio, edugestao, "Usa", "HTTPS")
+    Rel(aluno, edugestao, "Usa", "HTTPS")
+    Rel(resp, edugestao, "Usa", "HTTPS")

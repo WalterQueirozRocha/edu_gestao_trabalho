@@ -1,0 +1,26 @@
+C4Component
+    title EduGestão - Nível 3: Componentes da API Back-end
+
+    Container(spa, "SPA Web", "React 18", "Interface do usuário")
+    ContainerDb(db, "Banco de Dados", "PostgreSQL 16", "Dados do domínio")
+
+    Container_Boundary(api, "API Back-end (Spring Boot)") {
+        Component(seguranca, "seguranca", "Spring Security, JWT", "Login, emissão de token e regras de acesso (AcessoService: RN-06, RN-08, LGPD)")
+        Component(usuario, "usuario", "Controller/Service/JPA", "Usuários, perfis e vínculos responsável-estudante (RF-02, RF-03)")
+        Component(academico, "academico", "Controller/Service/JPA", "Anos letivos, etapas, turmas, disciplinas e matrículas (RF-04, RN-01, RN-07)")
+        Component(diario, "diario", "Controller/Service/JPA", "Aulas e frequência por horas (RF-05, RN-02)")
+        Component(avaliacao, "avaliacao", "Controller/Service/JPA", "Avaliações, notas, médias, boletins e autorizações (RF-06, RF-07, RN-03 a RN-05)")
+        Component(comunicacao, "comunicacao", "Controller/Service/JPA", "Comunicados segmentados (RF-08)")
+        Component(ocorrencia, "ocorrencia", "Controller/Service/JPA", "Ocorrências e denúncias com protocolo e tratamento (RF-09)")
+        Component(pedagogico, "pedagogico", "Controller/Service/JPA", "Planos pedagógicos individualizados (RF-10, RN-08)")
+        Component(ia, "ia", "Oracle Tribuo, @Scheduled", "Treino, predição de retenção/evasão, alertas e sugestões (RF-11, RN-09)")
+    }
+
+    Rel(spa, seguranca, "Autentica", "JSON/HTTPS")
+    Rel(spa, avaliacao, "Chama", "JSON/HTTPS")
+    Rel(avaliacao, ia, "Dispara predição e retreino ao fechar etapa")
+    Rel(ia, pedagogico, "Converte alerta em plano")
+    Rel(ocorrencia, pedagogico, "Gera plano no tratamento")
+    Rel(avaliacao, comunicacao, "Publica comunicado ao publicar etapa")
+    Rel(ia, db, "Lê indicadores e grava alertas", "JPA")
+    Rel(avaliacao, db, "Lê e grava", "JPA")

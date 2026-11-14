@@ -1,0 +1,14 @@
+C4Container
+    title EduGestão - Nível 2: Diagrama de Contêineres
+
+    Person(usuario, "Usuários", "Administrador, Coordenador, Professor, Profissional de Apoio, Aluno e Responsável")
+
+    System_Boundary(edugestao, "EduGestão") {
+        Container(spa, "SPA Web", "React 18, Vite", "Telas por perfil, acessíveis (WCAG 2.2 AA); guarda o token JWT")
+        Container(api, "API Back-end", "Java 21, Spring Boot 3", "API REST /api/**, regras de negócio, segurança JWT e motor de ML Oracle Tribuo em memória")
+        ContainerDb(db, "Banco de Dados", "PostgreSQL 16, Flyway", "20 tabelas do domínio; histórico preservado (ON DELETE RESTRICT)")
+    }
+
+    Rel(usuario, spa, "Acessa", "HTTPS")
+    Rel(spa, api, "Chama", "JSON/HTTPS + Bearer JWT")
+    Rel(api, db, "Lê e grava", "JDBC")
