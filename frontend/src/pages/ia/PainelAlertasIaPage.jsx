@@ -4,8 +4,11 @@ import { Campo } from '../../components/Campo';
 import { Tabela } from '../../components/Tabela';
 import { Alerta } from '../../components/Alerta';
 import { Modal } from '../../components/Modal';
+import { useAuth } from '../../auth/AuthContext';
 
 export function PainelAlertasIaPage() {
+  const { usuario } = useAuth();
+  const ehCoordenador = usuario.perfil === 'COORDENADOR';
   const [alertas, setAlertas] = useState([]);
   const [alertaParaConverter, setAlertaParaConverter] = useState(null);
   const [metas, setMetas] = useState('');
@@ -92,7 +95,7 @@ export function PainelAlertasIaPage() {
         <h1 style={{ margin: 0 }}>Predição de Risco e Assistente Pedagógico IA (UC14, UC15, UC18 — RF-11, RN-09)</h1>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="button" className="btn btn-secundario" onClick={treinarModelo}>
-            Retreinar Modelo Tribuo (CSV Histórico)
+            Retreinar Modelo Tribuo (Histórico)
           </button>
           <button type="button" className="btn btn-primario" onClick={executarPredicao}>
             Executar Análise de Risco Agora
@@ -129,6 +132,7 @@ export function PainelAlertasIaPage() {
               <td>
                 {a.status === 'NOVO' ? (
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {ehCoordenador && (
                     <button
                       type="button"
                       className="btn btn-sucesso"
@@ -141,12 +145,13 @@ export function PainelAlertasIaPage() {
                     >
                       Converter em Plano
                     </button>
+                    )}
                     <button type="button" className="btn btn-secundario" onClick={() => descartar(a.id)}>
                       Descartar
                     </button>
                   </div>
                 ) : (
-                  <span>Processado ({a.status})</span>
+                  <span>{a.status === 'ENCERRADO' ? 'Encerrado (risco voltou a baixo)' : `Processado (${a.status})`}</span>
                 )}
               </td>
             </tr>

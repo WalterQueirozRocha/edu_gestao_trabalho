@@ -3,8 +3,11 @@ import { apiFetch } from '../../api/client';
 import { Campo } from '../../components/Campo';
 import { Tabela } from '../../components/Tabela';
 import { Alerta } from '../../components/Alerta';
+import { useAuth } from '../../auth/AuthContext';
 
 export function ResultadosEtapaPage() {
+  const { usuario } = useAuth();
+  const ehCoordenador = usuario.perfil === 'COORDENADOR';
   const [turmas, setTurmas] = useState([]);
   const [etapas, setEtapas] = useState([]);
   const [turmaDisciplinas, setTurmaDisciplinas] = useState([]);
@@ -164,18 +167,20 @@ export function ResultadosEtapaPage() {
 
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Autorizar Alteração Excepcional Após Fechamento (RN-04)</h2>
-        <form onSubmit={emitirAutorizacao} className="form-grid" style={{ alignItems: 'end' }}>
-          <Campo id="au-etapa" label="Etapa Fechada/Publicada" as="select" value={novaAuth.etapaId} onChange={(e) => setNovaAuth({ ...novaAuth, etapaId: e.target.value })} required>
-            {etapas.map((et) => <option key={et.id} value={et.id}>{et.nome} ({et.status})</option>)}
-          </Campo>
-          <Campo id="au-td" label="Turma / Disciplina" as="select" value={novaAuth.turmaDisciplinaId} onChange={(e) => setNovaAuth({ ...novaAuth, turmaDisciplinaId: e.target.value })} required>
-            {turmaDisciplinas.map((td) => <option key={td.id} value={td.id}>{td.turmaNome} — {td.disciplinaNome}</option>)}
-          </Campo>
-          <Campo id="au-motivo" label="Justificativa / Motivo" value={novaAuth.motivo} onChange={(e) => setNovaAuth({ ...novaAuth, motivo: e.target.value })} required />
-          <div>
-            <button type="submit" className="btn btn-primario">Conceder Autorização</button>
-          </div>
-        </form>
+        {ehCoordenador && (
+          <form onSubmit={emitirAutorizacao} className="form-grid" style={{ alignItems: 'end' }}>
+            <Campo id="au-etapa" label="Etapa Fechada/Publicada" as="select" value={novaAuth.etapaId} onChange={(e) => setNovaAuth({ ...novaAuth, etapaId: e.target.value })} required>
+              {etapas.map((et) => <option key={et.id} value={et.id}>{et.nome} ({et.status})</option>)}
+            </Campo>
+            <Campo id="au-td" label="Turma / Disciplina" as="select" value={novaAuth.turmaDisciplinaId} onChange={(e) => setNovaAuth({ ...novaAuth, turmaDisciplinaId: e.target.value })} required>
+              {turmaDisciplinas.map((td) => <option key={td.id} value={td.id}>{td.turmaNome} — {td.disciplinaNome}</option>)}
+            </Campo>
+            <Campo id="au-motivo" label="Justificativa / Motivo" value={novaAuth.motivo} onChange={(e) => setNovaAuth({ ...novaAuth, motivo: e.target.value })} required />
+            <div>
+              <button type="submit" className="btn btn-primario">Conceder Autorização</button>
+            </div>
+          </form>
+        )}
 
         <Tabela
           colunas={['Etapa', 'Turma / Disciplina', 'Coordenador', 'Motivo', 'Validade', 'Utilizada?']}

@@ -118,7 +118,7 @@ export function PlanoPedagogicoPage() {
         <strong>Conformidade LGPD e RN-08:</strong> Este módulo armazena exclusivamente metas, adaptações e estratégias pedagógicas. Nenhum diagnóstico clínico ou médico deve ser registrado.
       </div>
 
-      {ehCoordenacao && (
+      {(usuario.perfil === 'COORDENADOR' || editPlanoId) && (
         <section className="card">
           <h2 style={{ marginTop: 0 }}>
             {editPlanoId ? `Revisar / Editar Plano Pedagógico #${editPlanoId}` : 'Elaborar Novo Plano Pedagógico Individualizado'}

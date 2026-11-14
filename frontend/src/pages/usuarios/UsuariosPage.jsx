@@ -12,7 +12,7 @@ export function UsuariosPage() {
   const [editandoId, setEditandoId] = useState(null);
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('123456');
+  const [senha, setSenha] = useState('');
   const [perfil, setPerfil] = useState('ALUNO');
   const [cargo, setCargo] = useState('');
   const [registroFuncional, setRegistroFuncional] = useState('');
@@ -44,7 +44,7 @@ export function UsuariosPage() {
     setEditandoId(u.id);
     setNome(u.nome || '');
     setEmail(u.email || '');
-    setSenha('123456');
+    setSenha('');
     setPerfil(u.perfil);
     setCargo(u.cargo || '');
     setRegistroFuncional(u.registroFuncional || '');
@@ -60,7 +60,7 @@ export function UsuariosPage() {
     setEditandoId(null);
     setNome('');
     setEmail('');
-    setSenha('123456');
+    setSenha('');
     setCargo('');
     setRegistroFuncional('');
     setFormacao('');
@@ -168,7 +168,7 @@ export function UsuariosPage() {
           <div className="form-grid">
             <Campo id="u-nome" label="Nome completo" value={nome} onChange={(e) => setNome(e.target.value)} required />
             <Campo id="u-email" label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Campo id="u-senha" label="Senha inicial" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required={!editandoId} />
+            <Campo id="u-senha" label={editandoId ? 'Nova senha (opcional)' : 'Senha inicial (mín. 8 caracteres)'} type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required={!editandoId} minLength={8} autoComplete="new-password" />
             <Campo id="u-perfil" label="Perfil de acesso" as="select" value={perfil} onChange={(e) => setPerfil(e.target.value)} disabled={Boolean(editandoId)}>
               <option value="ALUNO">ALUNO</option>
               <option value="RESPONSAVEL">RESPONSAVEL</option>

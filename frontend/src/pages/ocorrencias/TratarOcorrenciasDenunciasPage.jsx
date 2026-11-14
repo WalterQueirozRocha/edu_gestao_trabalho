@@ -9,7 +9,8 @@ export function TratarOcorrenciasDenunciasPage() {
   const [ocorrencias, setOcorrencias] = useState([]);
   const [denuncias, setDenuncias] = useState([]);
   const [alunos, setAlunos] = useState([]);
-  const [denunciaSelecionada, setDenunciaSelecionada] = useState(null);
+  // Caso em tratamento: { tipo: 'denuncia' | 'ocorrencia', id, rotulo }
+  const [caso, setCaso] = useState(null);
   const [statusNovo, setStatusNovo] = useState('ENCAMINHADA');
   const [medidas, setMedidas] = useState('');
   const [justificativa, setJustificativa] = useState('');
@@ -41,11 +42,19 @@ export function TratarOcorrenciasDenunciasPage() {
     carregar();
   }, []);
 
+  function abrirTratamento(novoCaso, medidasAtuais, justificativaAtual) {
+    setCaso(novoCaso);
+    setStatusNovo('ENCAMINHADA');
+    setMedidas(medidasAtuais || '');
+    setJustificativa(justificativaAtual || '');
+  }
+
   async function salvarTratamento(e) {
     e.preventDefault();
-    if (!denunciaSelecionada) return;
+    if (!caso) return;
     try {
-      await apiFetch(`/denuncias/${denunciaSelecionada.id}`, {
+      const recurso = caso.tipo === 'ocorrencia' ? 'ocorrencias' : 'denuncias';
+      await apiFetch(`/${recurso}/${caso.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           status: statusNovo,
@@ -61,9 +70,9 @@ export function TratarOcorrenciasDenunciasPage() {
       });
       setMsg({
         tipo: 'sucesso',
-        texto: `Denúncia ${denunciaSelecionada.protocolo} atualizada para ${statusNovo}${requerPlano && statusNovo !== 'ARQUIVADA' ? ' e Plano Pedagógico (RF-10) registrado.' : '.'}`
+        texto: `${caso.rotulo} atualizada para ${statusNovo}${requerPlano && statusNovo !== 'ARQUIVADA' ? ' e Plano Pedagógico (RF-10) registrado.' : '.'}`
       });
-      setDenunciaSelecionada(null);
+      setCaso(null);
       setRequerPlano(false);
       carregar();
     } catch (err) {
@@ -94,10 +103,7 @@ export function TratarOcorrenciasDenunciasPage() {
                   type="button"
                   className="btn btn-primario"
                   onClick={() => {
-                    setDenunciaSelecionada(d);
-                    setStatusNovo('ENCAMINHADA');
-                    setMedidas(d.medidas || '');
-                    setJustificativa(d.justificativaArquivamento || '');
+                    abrirTratamento({ tipo: 'denuncia', id: d.id, rotulo: `Denúncia ${d.protocolo}` }, d.medidas, d.justificativaArquivamento);
                   }}
                 >
                   Analisar Caso
@@ -111,7 +117,7 @@ export function TratarOcorrenciasDenunciasPage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>Histórico de Ocorrências Escolares</h2>
         <Tabela
-          colunas={['Data', 'Tipo', 'Estudantes Envolvidos', 'Descrição', 'Registrada por']}
+          colunas={['Data', 'Tipo', 'Estudantes Envolvidos', 'Descrição', 'Registrada por', 'Status', 'Medidas', 'Ação']}
           dados={ocorrencias}
           renderLinha={(o) => (
             <tr key={o.id}>
@@ -120,15 +126,26 @@ export function TratarOcorrenciasDenunciasPage() {
               <td><strong>{o.alunosNomes?.join(', ')}</strong></td>
               <td>{o.descricao}</td>
               <td>{o.registradaPorNome}</td>
+              <td><span className="badge badge-medio">{o.status}</span></td>
+              <td>{o.medidas || '—'}</td>
+              <td>
+                <button
+                  type="button"
+                  className="btn btn-primario"
+                  onClick={() => abrirTratamento({ tipo: 'ocorrencia', id: o.id, rotulo: `Ocorrência #${o.id}` }, o.medidas, null)}
+                >
+                  Tratar Ocorrência
+                </button>
+              </td>
             </tr>
           )}
         />
       </section>
 
       <Modal
-        aberto={Boolean(denunciaSelecionada)}
-        titulo={`Tratar Denúncia ${denunciaSelecionada?.protocolo || ''}`}
-        onFechar={() => setDenunciaSelecionada(null)}
+        aberto={Boolean(caso)}
+        titulo={`Tratar ${caso?.rotulo || ''}`}
+        onFechar={() => setCaso(null)}
       >
         <form onSubmit={salvarTratamento} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Campo id="tr-status" label="Decisão do Atendimento (BPMN Fig. 3)" as="select" value={statusNovo} onChange={(e) => setStatusNovo(e.target.value)}>

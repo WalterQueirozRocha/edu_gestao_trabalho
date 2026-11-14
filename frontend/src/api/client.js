@@ -16,6 +16,14 @@ export async function apiFetch(endpoint, options = {}) {
     headers
   });
 
+  // Token expirado ou invalido: encerra a sessao local e volta ao login
+  if (response.status === 401 && token) {
+    localStorage.removeItem('edugestao_token');
+    localStorage.removeItem('edugestao_usuario');
+    window.location.assign('/login');
+    throw new Error('Sessão expirada. Faça login novamente.');
+  }
+
   if (response.status === 204) {
     return null;
   }

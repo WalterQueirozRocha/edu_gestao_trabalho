@@ -19,7 +19,7 @@ export function CadastrosAcademicosPage() {
   const [editTurmaId, setEditTurmaId] = useState(null);
   const [editDiscId, setEditDiscId] = useState(null);
 
-  const [novoAno, setNovoAno] = useState({ ano: 2027, dataInicio: '2027-02-01', dataFim: '2027-12-15', mediaMinima: 6.0, frequenciaMinima: 75.0 });
+  const [novoAno, setNovoAno] = useState({ ano: 2027, dataInicio: '2027-02-01', dataFim: '2027-12-15', mediaMinima: 6.0, frequenciaMinima: 75.0, formulaMedia: 'PONDERADA' });
   const [novaEtapa, setNovaEtapa] = useState({ anoLetivoId: '', nome: '', dataInicio: '', dataFim: '' });
   const [novaTurma, setNovaTurma] = useState({ anoLetivoId: '', nome: '', serie: '', turno: 'MATUTINO' });
   const [novaDisc, setNovaDisc] = useState({ nome: '', codigo: '' });
@@ -163,6 +163,10 @@ export function CadastrosAcademicosPage() {
             <Campo id="al-fim" label="Fim" type="date" value={novoAno.dataFim} onChange={(e) => setNovoAno({ ...novoAno, dataFim: e.target.value })} required />
             <Campo id="al-med" label="Média Mínima" type="number" step="0.1" value={novoAno.mediaMinima} onChange={(e) => setNovoAno({ ...novoAno, mediaMinima: Number(e.target.value) })} required />
             <Campo id="al-freq" label="Freq. Mínima (%)" type="number" step="0.5" value={novoAno.frequenciaMinima} onChange={(e) => setNovoAno({ ...novoAno, frequenciaMinima: Number(e.target.value) })} required />
+            <Campo id="al-formula" label="Fórmula da Média (RN-03)" as="select" value={novoAno.formulaMedia} onChange={(e) => setNovoAno({ ...novoAno, formulaMedia: e.target.value })} required>
+              <option value="PONDERADA">Média ponderada pelos pesos</option>
+              <option value="ARITMETICA">Média aritmética simples</option>
+            </Campo>
             <div style={{ display: 'flex', alignItems: 'end', gap: 6 }}>
               <button type="submit" className="btn btn-primario">{editAnoId ? 'Atualizar Ano' : 'Criar Ano Letivo'}</button>
               {editAnoId && (
@@ -171,7 +175,7 @@ export function CadastrosAcademicosPage() {
             </div>
           </form>
           <Tabela
-            colunas={['Ano', 'Período', 'Média Mín.', 'Freq. Mín.', 'Ação']}
+            colunas={['Ano', 'Período', 'Média Mín.', 'Freq. Mín.', 'Fórmula', 'Ação']}
             dados={anos}
             renderLinha={(a) => (
               <tr key={a.id}>
@@ -179,6 +183,7 @@ export function CadastrosAcademicosPage() {
                 <td>{a.dataInicio} a {a.dataFim}</td>
                 <td>{a.mediaMinima}</td>
                 <td>{a.frequenciaMinima}%</td>
+                <td>{a.formulaMedia === 'ARITMETICA' ? 'Aritmética' : 'Ponderada'}</td>
                 <td>
                   <button
                     type="button"
@@ -190,7 +195,8 @@ export function CadastrosAcademicosPage() {
                         dataInicio: a.dataInicio,
                         dataFim: a.dataFim,
                         mediaMinima: a.mediaMinima,
-                        frequenciaMinima: a.frequenciaMinima
+                        frequenciaMinima: a.frequenciaMinima,
+                        formulaMedia: a.formulaMedia
                       });
                     }}
                   >

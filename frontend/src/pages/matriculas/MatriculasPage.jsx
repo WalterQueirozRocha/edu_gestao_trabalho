@@ -130,6 +130,11 @@ export function MatriculasPage() {
                       Transferir
                     </button>
                   )}
+                  {m.status !== 'EVADIDA' && (
+                    <button type="button" className="btn btn-secundario" onClick={() => alterarStatus(m.id, 'EVADIDA')}>
+                      Registrar Evasão
+                    </button>
+                  )}
                   {m.status !== 'CANCELADA' && (
                     <button type="button" className="btn btn-perigo" onClick={() => alterarStatus(m.id, 'CANCELADA')}>
                       Cancelar

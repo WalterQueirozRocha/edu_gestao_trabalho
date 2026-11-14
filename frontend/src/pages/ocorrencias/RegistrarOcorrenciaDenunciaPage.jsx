@@ -137,7 +137,8 @@ export function RegistrarOcorrenciaDenunciaPage() {
           <div className="alerta-box alerta-info" style={{ marginTop: 12 }}>
             <div><strong>Protocolo:</strong> {resultadoProtocolo.protocolo}</div>
             <div><strong>Status Atual:</strong> <span className="badge badge-publicada">{resultadoProtocolo.status}</span></div>
-            <div><strong>Relato:</strong> {resultadoProtocolo.descricao}</div>
+            {resultadoProtocolo.atualizadaEm && <div><strong>Última atualização:</strong> {resultadoProtocolo.atualizadaEm.replace('T', ' ').substring(0, 16)}</div>}
+            {resultadoProtocolo.descricao && <div><strong>Relato:</strong> {resultadoProtocolo.descricao}</div>}
             {resultadoProtocolo.medidas && <div><strong>Medidas / Encaminhamentos:</strong> {resultadoProtocolo.medidas}</div>}
             {resultadoProtocolo.justificativaArquivamento && (
               <div><strong>Justificativa de Arquivamento:</strong> {resultadoProtocolo.justificativaArquivamento}</div>
