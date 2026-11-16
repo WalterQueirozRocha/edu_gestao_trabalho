@@ -22,3 +22,20 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Back-end (Maven)
+backend/target/
+
+# Configuracao local com credenciais
+backend/src/main/resources/application-local.yml
+
+# Front-end (Node/Vite)
+frontend/node_modules/
+frontend/dist/
+.env
+.env.local
+
+# IDEs
+.idea/
+.vscode/
+*.iml
