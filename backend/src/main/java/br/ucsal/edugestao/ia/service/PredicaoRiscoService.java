@@ -551,7 +551,7 @@ public class PredicaoRiscoService {
         return lista;
     }
 
-    // ponytail: varre todas as matriculas a cada treino; paginar se o historico crescer muito
+    // Desempenho: varre todas as matriculas a cada treino; paginar se o historico crescer muito
     private List<ArrayExample<Label>> carregarExemplosHistorico() {
         List<ArrayExample<Label>> lista = new ArrayList<>();
         for (Matricula m : matriculaRepository.findAll()) {

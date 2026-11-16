@@ -11,6 +11,7 @@ import br.ucsal.edugestao.avaliacao.dto.AvaliacaoDto;
 import br.ucsal.edugestao.avaliacao.dto.NotaItemDto;
 import br.ucsal.edugestao.avaliacao.entity.Avaliacao;
 import br.ucsal.edugestao.avaliacao.entity.Nota;
+import br.ucsal.edugestao.avaliacao.media.CalculoMediaStrategy;
 import br.ucsal.edugestao.avaliacao.repository.AvaliacaoRepository;
 import br.ucsal.edugestao.avaliacao.repository.NotaRepository;
 import br.ucsal.edugestao.config.RecursoNaoEncontradoException;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,33 +151,13 @@ public class AvaliacaoService {
         return resultado;
     }
 
-    // RN-03: formula configurada no ano letivo
+    // RN-03: formula configurada no ano letivo (Strategy)
     public BigDecimal calcularMedia(List<Nota> notas, FormulaMedia formula) {
-        if (formula != FormulaMedia.ARITMETICA) {
-            return calcularMediaPonderada(notas);
-        }
-        if (notas == null || notas.isEmpty()) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        }
-        BigDecimal soma = notas.stream().map(Nota::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return soma.divide(BigDecimal.valueOf(notas.size()), 2, RoundingMode.HALF_UP);
+        return CalculoMediaStrategy.para(formula).calcular(notas);
     }
 
-    // RN-03: Calculo da media ponderada pelos pesos das avaliacoes da etapa
+    // RN-03: media ponderada pelos pesos das avaliacoes da etapa
     public BigDecimal calcularMediaPonderada(List<Nota> notas) {
-        if (notas == null || notas.isEmpty()) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        }
-        BigDecimal somaNotaPeso = BigDecimal.ZERO;
-        BigDecimal somaPesos = BigDecimal.ZERO;
-        for (Nota n : notas) {
-            BigDecimal peso = n.getAvaliacao().getPeso();
-            somaNotaPeso = somaNotaPeso.add(n.getValor().multiply(peso));
-            somaPesos = somaPesos.add(peso);
-        }
-        if (somaPesos.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        }
-        return somaNotaPeso.divide(somaPesos, 2, RoundingMode.HALF_UP);
+        return CalculoMediaStrategy.para(FormulaMedia.PONDERADA).calcular(notas);
     }
 }

@@ -1,7 +1,6 @@
 package br.ucsal.edugestao.avaliacao.service;
 
 import br.ucsal.edugestao.academico.entity.Etapa;
-import br.ucsal.edugestao.academico.entity.StatusEtapa;
 import br.ucsal.edugestao.academico.entity.TurmaDisciplina;
 import br.ucsal.edugestao.academico.repository.EtapaRepository;
 import br.ucsal.edugestao.academico.repository.TurmaDisciplinaRepository;
@@ -78,7 +77,7 @@ public class AutorizacaoAlteracaoService {
     // RN-04: Notas e faltas nao poderao ser alteradas apos o fechamento da etapa sem autorizacao da coordenacao
     @Transactional
     public void validarEutilizarAutorizacaoSeEtapaFechada(Etapa etapa, Long turmaDisciplinaId) {
-        if (etapa == null || etapa.getStatus() == StatusEtapa.ABERTA) {
+        if (etapa == null || etapa.getStatus().permiteLancamentoLivre()) {
             return;
         }
         Optional<AutorizacaoAlteracao> autorizacaoOpt = autorizacaoRepository

@@ -2,6 +2,8 @@ package br.ucsal.edugestao.avaliacao.service;
 
 import br.ucsal.edugestao.academico.dto.EtapaDto;
 import br.ucsal.edugestao.academico.entity.*;
+import br.ucsal.edugestao.academico.evento.EtapaFechadaEvent;
+import br.ucsal.edugestao.academico.evento.EtapaPublicadaEvent;
 import br.ucsal.edugestao.academico.repository.EtapaRepository;
 import br.ucsal.edugestao.academico.repository.MatriculaRepository;
 import br.ucsal.edugestao.academico.repository.TurmaDisciplinaRepository;
@@ -14,18 +16,16 @@ import br.ucsal.edugestao.avaliacao.entity.Nota;
 import br.ucsal.edugestao.avaliacao.entity.Situacao;
 import br.ucsal.edugestao.avaliacao.repository.BoletimRepository;
 import br.ucsal.edugestao.avaliacao.repository.NotaRepository;
-import br.ucsal.edugestao.comunicacao.service.ComunicadoService;
 import br.ucsal.edugestao.config.RecursoNaoEncontradoException;
 import br.ucsal.edugestao.config.RegraNegocioException;
 import br.ucsal.edugestao.diario.dto.ResumoFrequenciaDto;
 import br.ucsal.edugestao.diario.service.FrequenciaService;
-import br.ucsal.edugestao.ia.service.PredicaoRiscoService;
 import br.ucsal.edugestao.seguranca.service.AcessoService;
 import br.ucsal.edugestao.usuario.dto.UsuarioResponse;
 import br.ucsal.edugestao.usuario.entity.Perfil;
 import br.ucsal.edugestao.usuario.entity.Usuario;
 import br.ucsal.edugestao.usuario.repository.AlunoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +34,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class EtapaBoletimService {
@@ -49,38 +48,8 @@ public class EtapaBoletimService {
     private final AvaliacaoService avaliacaoService;
     private final FrequenciaService frequenciaService;
     private final AcessoService acessoService;
-    private final PredicaoRiscoService predicaoRiscoService;
-    private final ComunicadoService comunicadoService;
+    private final ApplicationEventPublisher eventos;
 
-    public EtapaBoletimService(
-            EtapaRepository etapaRepository,
-            TurmaRepository turmaRepository,
-            TurmaDisciplinaRepository turmaDisciplinaRepository,
-            MatriculaRepository matriculaRepository,
-            NotaRepository notaRepository,
-            BoletimRepository boletimRepository,
-            AlunoRepository alunoRepository,
-            AvaliacaoService avaliacaoService,
-            FrequenciaService frequenciaService,
-            AcessoService acessoService
-    ) {
-        this(
-                etapaRepository,
-                turmaRepository,
-                turmaDisciplinaRepository,
-                matriculaRepository,
-                notaRepository,
-                boletimRepository,
-                alunoRepository,
-                avaliacaoService,
-                frequenciaService,
-                acessoService,
-                null,
-                null
-        );
-    }
-
-    @Autowired
     public EtapaBoletimService(
             EtapaRepository etapaRepository,
             TurmaRepository turmaRepository,
@@ -92,8 +61,7 @@ public class EtapaBoletimService {
             AvaliacaoService avaliacaoService,
             FrequenciaService frequenciaService,
             AcessoService acessoService,
-            PredicaoRiscoService predicaoRiscoService,
-            ComunicadoService comunicadoService
+            ApplicationEventPublisher eventos
     ) {
         this.etapaRepository = etapaRepository;
         this.turmaRepository = turmaRepository;
@@ -105,8 +73,7 @@ public class EtapaBoletimService {
         this.avaliacaoService = avaliacaoService;
         this.frequenciaService = frequenciaService;
         this.acessoService = acessoService;
-        this.predicaoRiscoService = predicaoRiscoService;
-        this.comunicadoService = comunicadoService;
+        this.eventos = eventos;
     }
 
     @Transactional
@@ -116,13 +83,8 @@ public class EtapaBoletimService {
         etapa.fechar();
         Etapa salva = etapaRepository.save(etapa);
         consolidarBoletinsDaEtapa(salva, false);
-        if (predicaoRiscoService != null) {
-            if (ehUltimaEtapaDoAno(salva)) {
-                // IA §10: retreino ao final de cada ano letivo
-                predicaoRiscoService.treinarModelo();
-            }
-            predicaoRiscoService.executarPredicaoParaAlunosAtivos();
-        }
+        // Observer: a IA (RF-11) reage ao fechamento sem acoplar este servico ao modulo de IA
+        eventos.publishEvent(new EtapaFechadaEvent(salva, ehUltimaEtapaDoAno(salva)));
         return EtapaDto.fromEntity(salva);
     }
 
@@ -138,20 +100,8 @@ public class EtapaBoletimService {
         etapa.publicar();
         Etapa salva = etapaRepository.save(etapa);
         consolidarBoletinsDaEtapa(salva, true);
-        if (comunicadoService != null) {
-            try {
-                Usuario autor = acessoService.obterUsuarioLogado();
-                comunicadoService.publicarAutomatico(
-                        autor,
-                        "Boletins Publicados - " + salva.getNome() + " (" + salva.getAnoLetivo().getAno() + ")",
-                        "Os boletins e resultados consolidados da etapa " + salva.getNome()
-                                + " foram publicados pela coordenacao pedagogica e ja estao disponiveis para consulta.",
-                        Set.of(Perfil.ALUNO, Perfil.RESPONSAVEL)
-                );
-            } catch (Exception ignored) {
-                // Ignora caso nao haja usuario logado no contexto de teste
-            }
-        }
+        // Observer: o modulo de comunicacao avisa alunos e responsaveis
+        eventos.publishEvent(new EtapaPublicadaEvent(salva));
         return EtapaDto.fromEntity(salva);
     }
 

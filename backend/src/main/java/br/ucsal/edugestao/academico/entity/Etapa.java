@@ -1,6 +1,5 @@
 package br.ucsal.edugestao.academico.entity;
 
-import br.ucsal.edugestao.config.RegraNegocioException;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -29,19 +28,13 @@ public class Etapa {
     @Column(nullable = false, length = 20)
     private StatusEtapa status = StatusEtapa.ABERTA;
 
-    // Fluxo da etapa: ABERTA -> FECHADA -> PUBLICADA
+    // Fluxo da etapa: ABERTA -> FECHADA -> PUBLICADA (State em StatusEtapa)
     public void fechar() {
-        if (status != StatusEtapa.ABERTA) {
-            throw new RegraNegocioException("Somente etapas abertas podem ser fechadas.");
-        }
-        this.status = StatusEtapa.FECHADA;
+        this.status = status.fechar();
     }
 
     public void publicar() {
-        if (status != StatusEtapa.FECHADA) {
-            throw new RegraNegocioException("A etapa precisa estar fechada para ser publicada.");
-        }
-        this.status = StatusEtapa.PUBLICADA;
+        this.status = status.publicar();
     }
 
     public Long getId() {

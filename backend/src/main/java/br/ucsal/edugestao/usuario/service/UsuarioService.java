@@ -5,6 +5,7 @@ import br.ucsal.edugestao.config.RegraNegocioException;
 import br.ucsal.edugestao.usuario.dto.UsuarioRequest;
 import br.ucsal.edugestao.usuario.dto.UsuarioResponse;
 import br.ucsal.edugestao.usuario.entity.*;
+import br.ucsal.edugestao.usuario.factory.UsuarioFactory;
 import br.ucsal.edugestao.usuario.repository.AlunoRepository;
 import br.ucsal.edugestao.usuario.repository.ResponsavelRepository;
 import br.ucsal.edugestao.usuario.repository.UsuarioRepository;
@@ -61,7 +62,7 @@ public class UsuarioService {
             throw new RegraNegocioException("Senha inicial obrigatoria, com no minimo 8 caracteres.");
         }
         String senhaBruta = req.senha();
-        Usuario usuario = instanciarPorPerfil(req.perfil());
+        Usuario usuario = UsuarioFactory.criar(req.perfil());
         preencherCampos(usuario, req);
         usuario.setSenhaHash(passwordEncoder.encode(senhaBruta));
         usuario.setAtivo(true);
@@ -107,17 +108,6 @@ public class UsuarioService {
     public Usuario buscarEntidade(Long id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuario nao encontrado."));
-    }
-
-    private Usuario instanciarPorPerfil(Perfil perfil) {
-        return switch (perfil) {
-            case ADMINISTRADOR -> new Administrador();
-            case COORDENADOR -> new Coordenador();
-            case PROFESSOR -> new Professor();
-            case PROFISSIONAL_APOIO -> new ProfissionalApoio();
-            case ALUNO -> new Aluno();
-            case RESPONSAVEL -> new Responsavel();
-        };
     }
 
     private void preencherCampos(Usuario usuario, UsuarioRequest req) {

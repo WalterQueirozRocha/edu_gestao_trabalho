@@ -31,6 +31,7 @@ backend/    API REST (Spring Boot), organizada por módulo de domínio
             pedagogico, seguranca, usuario, config
 frontend/   SPA em React com telas por perfil
 docs/c4/    Diagramas C4 (contexto, contêineres e componentes) em Mermaid
+docs/       Padrões de projeto aplicados (padroes-de-projeto.md)
 ```
 
 ## Como executar
@@ -116,12 +117,14 @@ Os testes unitários cobrem as regras de negócio:
 | RN-03: média ponderada ou aritmética conforme o regimento | `AvaliacaoServiceTest` |
 | RN-04: bloqueio de alteração em etapa fechada sem autorização | `AutorizacaoAlteracaoServiceTest` |
 | RF-11 / RN-09: faixas de risco, regras de referência e sugestões pedagógicas | `PredicaoRiscoServiceTest` |
+| Padrões de projeto (Strategy, State, Observer, Factory) | `CalculoMediaStrategyTest`, `StatusEtapaTest`, `PredicaoAoFecharEtapaListenerTest`, `UsuarioFactoryTest` |
 
 O workflow `.github/workflows/ci.yml` compila o back-end e o front-end e roda os testes a cada push e pull request.
 
 ## Documentação
 
 - Diagramas C4 em [`docs/c4`](docs/c4), em Mermaid
+- Padrões de projeto aplicados (Strategy, State, Observer, Factory e padrões arquiteturais) em [`docs/padroes-de-projeto.md`](docs/padroes-de-projeto.md)
 - Requisitos, regras de negócio, BPMN, diagramas UML e definição da IA no documento da etapa 1 do projeto
 
 ## Equipe

@@ -18,9 +18,9 @@ C4Component
 
     Rel(spa, seguranca, "Autentica", "JSON/HTTPS")
     Rel(spa, avaliacao, "Chama", "JSON/HTTPS")
-    Rel(avaliacao, ia, "Dispara predição e retreino ao fechar etapa")
+    Rel(ia, avaliacao, "Observa EtapaFechadaEvent: predição e retreino", "Evento Spring")
     Rel(ia, pedagogico, "Converte alerta em plano")
     Rel(ocorrencia, pedagogico, "Gera plano no tratamento")
-    Rel(avaliacao, comunicacao, "Publica comunicado ao publicar etapa")
+    Rel(comunicacao, avaliacao, "Observa EtapaPublicadaEvent: comunicado automático", "Evento Spring")
     Rel(ia, db, "Lê indicadores e grava alertas", "JPA")
     Rel(avaliacao, db, "Lê e grava", "JPA")
