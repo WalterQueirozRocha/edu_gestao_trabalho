@@ -3,6 +3,7 @@ import { apiFetch } from '../../api/client';
 import { Campo } from '../../components/Campo';
 import { Tabela } from '../../components/Tabela';
 import { Alerta } from '../../components/Alerta';
+import { formatarData } from '../../utils/formatters';
 
 export function DiarioClassePage() {
   const [turmasDisciplinas, setTurmasDisciplinas] = useState([]);
@@ -100,6 +101,10 @@ export function DiarioClassePage() {
     };
   }
 
+  function marcarTodos(presente) {
+    setChamada((atual) => atual.map((item) => ({ ...item, presente })));
+  }
+
   async function registrarNovaAula(e) {
     e.preventDefault();
     try {
@@ -137,7 +142,15 @@ export function DiarioClassePage() {
 
   return (
     <div>
-      <h1 style={{ marginTop: 0 }}>Diário de Classe Eletrônico e Frequência (UC05 — RF-05, RN-02, RN-04)</h1>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Diário de Classe Eletrônico e Frequência (UC05 — RF-05, RN-02, RN-04)</h1>
+          <p className="page-subtitle">
+            Registro de aulas ministradas e chamada por horas com cálculo imediato de assiduidade.
+          </p>
+        </div>
+      </div>
+
       <Alerta tipo={msg.tipo} mensagem={msg.texto} onFechar={() => setMsg({ tipo: '', texto: '' })} />
 
       <section className="card">
@@ -189,24 +202,24 @@ export function DiarioClassePage() {
         </form>
       </section>
 
-      <div className="grid-cards" style={{ gridTemplateColumns: '1fr 1.4fr' }}>
+      <div className="grid-cards" style={{ gridTemplateColumns: '1fr 1.5fr' }}>
         <section className="card">
-          <h2 style={{ marginTop: 0 }}>Aulas Registradas</h2>
+          <h2 style={{ marginTop: 0 }}>Aulas Registradas ({aulas.length})</h2>
           <Tabela
             colunas={['Data', 'Conteúdo', 'Horas', 'Chamada']}
             dados={aulas}
             renderLinha={(a) => (
               <tr key={a.id}>
-                <td>{a.data}</td>
+                <td>{formatarData(a.data)}</td>
                 <td>{a.conteudo}</td>
-                <td>{a.horas}h</td>
+                <td><strong>{a.horas}h</strong></td>
                 <td>
                   <button
                     type="button"
-                    className={aulaSelecionada?.id === a.id ? 'btn btn-primario' : 'btn btn-secundario'}
+                    className={aulaSelecionada?.id === a.id ? 'btn btn-primario btn-sm' : 'btn btn-secundario btn-sm'}
                     onClick={() => selecionarAulaParaChamada(a)}
                   >
-                    Realizar Chamada
+                    {aulaSelecionada?.id === a.id ? 'Aberta' : 'Chamada'}
                   </button>
                 </td>
               </tr>
@@ -215,13 +228,28 @@ export function DiarioClassePage() {
         </section>
 
         <section className="card">
-          <h2 style={{ marginTop: 0 }}>
-            Chamada da Aula {aulaSelecionada ? `(${aulaSelecionada.data} — ${aulaSelecionada.conteudo})` : ''}
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+            <h2 style={{ margin: 0 }}>
+              Chamada {aulaSelecionada ? `— ${formatarData(aulaSelecionada.data)} (${aulaSelecionada.horas}h)` : ''}
+            </h2>
+            {aulaSelecionada && chamada.length > 0 && (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button type="button" className="btn btn-secundario btn-sm" onClick={() => marcarTodos(true)}>
+                  Marcar todos presentes
+                </button>
+                <button type="button" className="btn btn-secundario btn-sm" onClick={() => marcarTodos(false)}>
+                  Marcar todos ausentes
+                </button>
+              </div>
+            )}
+          </div>
           {aulaSelecionada ? (
             <>
+              <p style={{ marginTop: 0, marginBottom: 12, fontSize: '0.88rem', color: 'var(--cor-texto-secundario)' }}>
+                Conteúdo: <strong>{aulaSelecionada.conteudo}</strong>
+              </p>
               <Tabela
-                colunas={['Estudante', 'Presente?', '% Presença / Faltas (RN-02)', 'Situação Frequência', 'Justificativa (opcional)']}
+                colunas={['Estudante', 'Presença', '% Presença / Faltas (RN-02)', 'Situação Frequência', 'Justificativa (opcional)']}
                 dados={chamada}
                 renderLinha={(item, idx) => {
                   const freq = calcularFreqSimulada(item);
@@ -231,7 +259,7 @@ export function DiarioClassePage() {
                     <tr key={item.matriculaId}>
                       <td><strong>{item.alunoNome}</strong></td>
                       <td>
-                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 600 }}>
                           <input
                             type="checkbox"
                             checked={item.presente}
@@ -241,12 +269,14 @@ export function DiarioClassePage() {
                               setChamada(copia);
                             }}
                           />
-                          {item.presente ? 'Presente' : 'Falta'}
+                          <span style={{ color: item.presente ? 'var(--cor-secundaria)' : 'var(--cor-perigo)' }}>
+                            {item.presente ? 'Presente' : 'Falta'}
+                          </span>
                         </label>
                       </td>
                       <td>
                         <strong>{freq.percentual}%</strong>{' '}
-                        <span style={{ fontSize: '0.82rem', color: 'var(--cor-texto-secundario)' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--cor-texto-secundario)' }}>
                           ({freq.horasFaltas}h falta / {freq.horasRegistradas}h)
                         </span>
                       </td>
@@ -263,6 +293,7 @@ export function DiarioClassePage() {
                         <input
                           type="text"
                           className="campo-input"
+                          placeholder="Ex.: Atestado médico"
                           aria-label={`Justificativa de ${item.alunoNome}`}
                           value={item.justificativa}
                           onChange={(e) => {

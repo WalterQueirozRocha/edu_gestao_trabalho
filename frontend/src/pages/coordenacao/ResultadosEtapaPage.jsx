@@ -4,6 +4,7 @@ import { Campo } from '../../components/Campo';
 import { Tabela } from '../../components/Tabela';
 import { Alerta } from '../../components/Alerta';
 import { useAuth } from '../../auth/AuthContext';
+import { formatarData, formatarDataHora } from '../../utils/formatters';
 
 export function ResultadosEtapaPage() {
   const { usuario } = useAuth();
@@ -111,19 +112,24 @@ export function ResultadosEtapaPage() {
             <tr key={e.id}>
               <td><strong>{e.nome}</strong></td>
               <td>{e.anoLetivoAno}</td>
-              <td>{e.dataInicio} a {e.dataFim}</td>
+              <td>{formatarData(e.dataInicio)} a {formatarData(e.dataFim)}</td>
               <td><span className={`badge badge-${e.status.toLowerCase()}`}>{e.status}</span></td>
               <td>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {e.status === 'ABERTA' && (
-                    <button type="button" className="btn btn-primario" onClick={() => fecharEtapa(e.id)}>
+                    <button type="button" className="btn btn-primario btn-sm" onClick={() => fecharEtapa(e.id)}>
                       Fechar Etapa (RN-04)
                     </button>
                   )}
-                  {e.status !== 'PUBLICADA' && (
-                    <button type="button" className="btn btn-sucesso" onClick={() => publicarEtapa(e.id)}>
+                  {e.status === 'FECHADA' && (
+                    <button type="button" className="btn btn-sucesso btn-sm" onClick={() => publicarEtapa(e.id)}>
                       Publicar Boletins (RN-05)
                     </button>
+                  )}
+                  {e.status === 'PUBLICADA' && (
+                    <span style={{ fontSize: '0.84rem', color: 'var(--cor-texto-secundario)' }}>
+                      Boletins publicados
+                    </span>
                   )}
                 </div>
               </td>
@@ -191,8 +197,12 @@ export function ResultadosEtapaPage() {
               <td>{a.turmaNome} — {a.disciplinaNome}</td>
               <td>{a.coordenadorNome}</td>
               <td>{a.motivo}</td>
-              <td>{a.validaAte?.replace('T', ' ').substring(0, 16)}</td>
-              <td>{a.utilizada ? 'Sim (Consumida)' : 'Não (Disponível)'}</td>
+              <td>{formatarDataHora(a.validaAte)}</td>
+              <td>
+                <span className={a.utilizada ? 'badge badge-neutro' : 'badge badge-ativa'}>
+                  {a.utilizada ? 'Consumida' : 'Disponível'}
+                </span>
+              </td>
             </tr>
           )}
         />

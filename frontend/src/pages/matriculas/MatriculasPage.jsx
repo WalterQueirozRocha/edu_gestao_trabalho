@@ -3,6 +3,7 @@ import { apiFetch } from '../../api/client';
 import { Campo } from '../../components/Campo';
 import { Tabela } from '../../components/Tabela';
 import { Alerta } from '../../components/Alerta';
+import { formatarData } from '../../utils/formatters';
 
 export function MatriculasPage() {
   const [matriculas, setMatriculas] = useState([]);
@@ -112,31 +113,31 @@ export function MatriculasPage() {
               <td>{m.alunoMatriculaCodigo}</td>
               <td>{m.turmaNome} ({m.turmaSerie})</td>
               <td>{m.anoLetivo}</td>
-              <td>{m.dataMatricula}</td>
+              <td>{formatarData(m.dataMatricula)}</td>
               <td>
-                <span className={m.status === 'ATIVA' ? 'badge badge-ativa' : 'badge badge-fechada'}>
+                <span className={`badge badge-${m.status.toLowerCase()}`}>
                   {m.status}
                 </span>
               </td>
               <td>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {m.status !== 'ENCERRADA' && (
-                    <button type="button" className="btn btn-secundario" onClick={() => alterarStatus(m.id, 'ENCERRADA')}>
+                    <button type="button" className="btn btn-secundario btn-sm" onClick={() => alterarStatus(m.id, 'ENCERRADA')}>
                       Encerrar
                     </button>
                   )}
                   {m.status !== 'TRANSFERIDA' && (
-                    <button type="button" className="btn btn-secundario" onClick={() => alterarStatus(m.id, 'TRANSFERIDA')}>
+                    <button type="button" className="btn btn-secundario btn-sm" onClick={() => alterarStatus(m.id, 'TRANSFERIDA')}>
                       Transferir
                     </button>
                   )}
                   {m.status !== 'EVADIDA' && (
-                    <button type="button" className="btn btn-secundario" onClick={() => alterarStatus(m.id, 'EVADIDA')}>
+                    <button type="button" className="btn btn-secundario btn-sm" onClick={() => alterarStatus(m.id, 'EVADIDA')}>
                       Registrar Evasão
                     </button>
                   )}
                   {m.status !== 'CANCELADA' && (
-                    <button type="button" className="btn btn-perigo" onClick={() => alterarStatus(m.id, 'CANCELADA')}>
+                    <button type="button" className="btn btn-perigo btn-sm" onClick={() => alterarStatus(m.id, 'CANCELADA')}>
                       Cancelar
                     </button>
                   )}

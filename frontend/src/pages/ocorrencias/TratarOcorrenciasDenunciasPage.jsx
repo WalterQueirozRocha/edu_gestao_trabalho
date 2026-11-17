@@ -4,6 +4,7 @@ import { Campo } from '../../components/Campo';
 import { Tabela } from '../../components/Tabela';
 import { Alerta } from '../../components/Alerta';
 import { Modal } from '../../components/Modal';
+import { formatarData, formatarDataHora } from '../../utils/formatters';
 
 export function TratarOcorrenciasDenunciasPage() {
   const [ocorrencias, setOcorrencias] = useState([]);
@@ -93,15 +94,15 @@ export function TratarOcorrenciasDenunciasPage() {
           renderLinha={(d) => (
             <tr key={d.id}>
               <td><strong>{d.protocolo}</strong></td>
-              <td>{d.criadaEm?.replace('T', ' ').substring(0, 16)}</td>
+              <td>{formatarDataHora(d.criadaEm)}</td>
               <td>{d.anonima ? 'Anônimo' : d.denuncianteNome}</td>
               <td>{d.descricao}</td>
-              <td><span className="badge badge-medio">{d.status}</span></td>
+              <td><span className={`badge badge-${d.status.toLowerCase()}`}>{d.status}</span></td>
               <td>{d.medidas || d.justificativaArquivamento || '—'}</td>
               <td>
                 <button
                   type="button"
-                  className="btn btn-primario"
+                  className="btn btn-primario btn-sm"
                   onClick={() => {
                     abrirTratamento({ tipo: 'denuncia', id: d.id, rotulo: `Denúncia ${d.protocolo}` }, d.medidas, d.justificativaArquivamento);
                   }}
@@ -121,17 +122,17 @@ export function TratarOcorrenciasDenunciasPage() {
           dados={ocorrencias}
           renderLinha={(o) => (
             <tr key={o.id}>
-              <td>{o.data}</td>
-              <td><span className="badge badge-fechada">{o.tipo}</span></td>
+              <td>{formatarData(o.data)}</td>
+              <td><span className="badge badge-info">{o.tipo}</span></td>
               <td><strong>{o.alunosNomes?.join(', ')}</strong></td>
               <td>{o.descricao}</td>
               <td>{o.registradaPorNome}</td>
-              <td><span className="badge badge-medio">{o.status}</span></td>
+              <td><span className={`badge badge-${o.status.toLowerCase()}`}>{o.status}</span></td>
               <td>{o.medidas || '—'}</td>
               <td>
                 <button
                   type="button"
-                  className="btn btn-primario"
+                  className="btn btn-primario btn-sm"
                   onClick={() => abrirTratamento({ tipo: 'ocorrencia', id: o.id, rotulo: `Ocorrência #${o.id}` }, o.medidas, null)}
                 >
                   Tratar Ocorrência

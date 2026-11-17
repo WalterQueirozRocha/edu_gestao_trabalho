@@ -25,6 +25,7 @@ export function UsuariosPage() {
 
   const [alunoVinculoId, setAlunoVinculoId] = useState('');
   const [responsavelVinculoId, setResponsavelVinculoId] = useState('');
+  const [buscaTexto, setBuscaTexto] = useState('');
 
   async function carregar() {
     try {
@@ -154,6 +155,16 @@ export function UsuariosPage() {
 
   const alunos = usuarios.filter((u) => u.perfil === 'ALUNO');
   const responsaveis = usuarios.filter((u) => u.perfil === 'RESPONSAVEL');
+  const mapaNomes = Object.fromEntries(usuarios.map((u) => [u.id, u.nome]));
+  const usuariosFiltrados = usuarios.filter((u) => {
+    if (!buscaTexto.trim()) return true;
+    const termo = buscaTexto.toLowerCase();
+    return (
+      u.nome?.toLowerCase().includes(termo) ||
+      u.email?.toLowerCase().includes(termo) ||
+      u.matricula?.toLowerCase().includes(termo)
+    );
+  });
 
   return (
     <div>
@@ -238,28 +249,37 @@ export function UsuariosPage() {
       </section>
 
       <section className="card" aria-labelledby="sec-lista-usuarios">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h2 id="sec-lista-usuarios" style={{ margin: 0 }}>Usuários Cadastrados</h2>
-          <Campo id="filtro-perfil" label="Filtrar por perfil" as="select" value={filtroPerfil} onChange={(e) => setFiltroPerfil(e.target.value)}>
-            <option value="">Todos os perfis</option>
-            <option value="ADMINISTRADOR">ADMINISTRADOR</option>
-            <option value="COORDENADOR">COORDENADOR</option>
-            <option value="PROFESSOR">PROFESSOR</option>
-            <option value="PROFISSIONAL_APOIO">PROFISSIONAL_APOIO</option>
-            <option value="ALUNO">ALUNO</option>
-            <option value="RESPONSAVEL">RESPONSAVEL</option>
-          </Campo>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+          <h2 id="sec-lista-usuarios" style={{ margin: 0 }}>Usuários Cadastrados ({usuariosFiltrados.length})</h2>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <Campo
+              id="busca-usuario"
+              label="Buscar por nome, e-mail ou matrícula"
+              placeholder="Digite para filtrar..."
+              value={buscaTexto}
+              onChange={(e) => setBuscaTexto(e.target.value)}
+            />
+            <Campo id="filtro-perfil" label="Filtrar por perfil" as="select" value={filtroPerfil} onChange={(e) => setFiltroPerfil(e.target.value)}>
+              <option value="">Todos os perfis</option>
+              <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+              <option value="COORDENADOR">COORDENADOR</option>
+              <option value="PROFESSOR">PROFESSOR</option>
+              <option value="PROFISSIONAL_APOIO">PROFISSIONAL_APOIO</option>
+              <option value="ALUNO">ALUNO</option>
+              <option value="RESPONSAVEL">RESPONSAVEL</option>
+            </Campo>
+          </div>
         </div>
 
         <Tabela
           colunas={['ID', 'Nome', 'E-mail', 'Perfil', 'Detalhes / Vínculos', 'Status', 'Ações']}
-          dados={usuarios}
+          dados={usuariosFiltrados}
           renderLinha={(u) => (
             <tr key={u.id}>
               <td>{u.id}</td>
               <td><strong>{u.nome}</strong></td>
               <td>{u.email}</td>
-              <td><span className="badge badge-publicada">{u.perfil}</span></td>
+              <td><span className="badge badge-info">{u.perfil}</span></td>
               <td>
                 {u.matricula && `Matrícula: ${u.matricula} `}
                 {u.registroFuncional && `Reg: ${u.registroFuncional} `}
@@ -268,10 +288,11 @@ export function UsuariosPage() {
                   <div style={{ marginTop: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {u.responsaveisIds.map((rid) => (
                       <span key={rid} className="badge badge-aberta" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        Resp #{rid}
+                        {mapaNomes[rid] ? `Resp: ${mapaNomes[rid]}` : `Resp #${rid}`}
                         <button
                           type="button"
                           title="Remover vínculo"
+                          aria-label={`Remover vínculo com responsável ${mapaNomes[rid] || rid}`}
                           style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 700, padding: 0 }}
                           onClick={() => removerVinculoResponsavel(u, rid)}
                         >
