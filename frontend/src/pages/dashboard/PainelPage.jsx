@@ -105,15 +105,25 @@ export function PainelPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <section className="welcome-banner" aria-label="Boas-vindas">
         <div>
-          <h1 className="page-title">Painel Inicial</h1>
-          <p className="page-subtitle">
-            Bem-vindo(a), <strong>{usuario?.nome}</strong> — Perfil ativo:{' '}
-            <strong>{ROTULO_PERFIL[usuario?.perfil] || usuario?.perfil}</strong>.
+          <span
+            className="badge"
+            style={{
+              background: 'rgba(255, 255, 255, 0.16)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              marginBottom: 10
+            }}
+          >
+            Ano Letivo 2026 • {ROTULO_PERFIL[usuario?.perfil] || usuario?.perfil}
+          </span>
+          <h1>Olá, {usuario?.nome}</h1>
+          <p>
+            Acompanhe os indicadores escolares e acesse rapidamente os módulos compatíveis com a sua função.
           </p>
         </div>
-      </div>
+      </section>
 
       {indicadores.length > 0 && (
         <section className="stats-grid" aria-label="Indicadores rápidos do perfil">
